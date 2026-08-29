@@ -112,12 +112,12 @@ class FailsCleanly(unittest.TestCase):
         self.assertIn("expected", text)
         self.assertNotIn("Traceback", text)
 
-    def test_unimplemented_tiers_say_so_and_do_not_crash(self):
+    def test_unreadable_video_fails_cleanly(self):
+        """Tier B runs structure from motion; a stub file must not crash it."""
         with tempfile.TemporaryDirectory() as t:
             (Path(t) / "clip.mov").write_bytes(b"\x00" * 32)
             code, text = self._run(["run", t])
-        self.assertEqual(code, 2)
-        self.assertIn("not implemented", text)
+        self.assertNotEqual(code, 0)
         self.assertNotIn("Traceback", text)
 
     def test_truncated_archive_does_not_raise(self):

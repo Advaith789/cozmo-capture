@@ -52,7 +52,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
     print(f"tier      {tier}")
 
     if tier != "C":
-        print(f"\nTier {tier} ingest is not implemented yet — only Tier C runs today.")
+        print(f"\nTier {tier} ingest is not implemented yet — only Tier C runs in the measure subcommand; use run.")
         return 2
 
     t0 = time.time()
@@ -77,8 +77,19 @@ def cmd_measure(args: argparse.Namespace) -> int:
         if not args.ablate:
             print(f"provenance       {' | '.join(h.provenance)}")
     # Room dimensions from fitted wall planes.
-    pts = np.vstack([lidar.to_world_points(f) for f in cap.frames])
-    fy, cy = _modes(pts[:, 1])
+    if tier == "C":
+        pts = np.vstack([lidar.to_world_points(f) for f in cap.frames])
+    else:
+        pts = cap.meta["points"]
+    if tier == "C":
+        fy, cy = _modes(pts[:, 1])
+    else:
+        # A sparse reconstruction puts points where there is texture, which is
+        # furniture and posters, not blank ceilings. There is no dense band for
+        # a mode to find, so the extremes of the cloud stand in for the two
+        # surfaces, trimmed to shed stray triangulations.
+        fy, cy = (float(np.percentile(pts[:, 1], 1.0)),
+                  float(np.percentile(pts[:, 1], 99.0)))
     room = walls.detect(pts, fy, cy)
     print(f"\nroom axes        {room.theta_deg:.2f}°   "
           f"orthogonality {abs(room.axis_a @ room.axis_b):.1e}")
@@ -112,11 +123,6 @@ def cmd_run(args: argparse.Namespace) -> int:
         return 1
 
     print(f"capture   {path.name}\ntier      {tier}")
-    if tier != "C":
-        print(f"\nTier {tier} ingest is not implemented yet. "
-              f"Only the LiDAR tier runs today.")
-        return 2
-
     try:
         import numpy as np
 
@@ -125,7 +131,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         from cozmo.geometry import openings as openings_mod
         from cozmo.geometry import walls
         from cozmo.geometry.height import _modes, ceiling_height
-        from cozmo.ingest import lidar
+        from cozmo.ingest import camera, lidar
     except ImportError as exc:
         print(f"error: the pipeline needs its dependencies: {exc}", file=sys.stderr)
         print("       python3 -m venv .venv && .venv/bin/pip install -r "
@@ -134,7 +140,12 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     t0 = time.time()
     try:
-        cap = lidar.load(path, max_frames=args.frames)
+        if tier == "C":
+            cap = lidar.load(path, max_frames=args.frames)
+        elif tier == "B":
+            cap = camera.load_video(path)
+        else:
+            cap = camera.load_photos(path)
     except Exception as exc:
         print(f"error: could not read {path.name}: "
               f"{type(exc).__name__}: {exc}", file=sys.stderr)
@@ -144,7 +155,8 @@ def cmd_run(args: argparse.Namespace) -> int:
     print(f"frames    {cap.meta['loaded']} of {cap.meta['total_keyframes']}")
 
     try:
-        height = ceiling_height(cap, method=args.height_method,
+        method = args.height_method if tier == "C" else "sparse"
+        height = ceiling_height(cap, method=method,
                                 bootstrap=args.bootstrap,
                                 sigma_step=args.sigma_step)
     except Exception as exc:
@@ -152,24 +164,49 @@ def cmd_run(args: argparse.Namespace) -> int:
         print("       the capture may not show enough floor and ceiling. "
               "Re-scan tilting up and down at each corner.", file=sys.stderr)
         return 3
-    pts = np.vstack([lidar.to_world_points(f) for f in cap.frames])
-    fy, cy = _modes(pts[:, 1])
+    if tier == "C":
+        pts = np.vstack([lidar.to_world_points(f) for f in cap.frames])
+    else:
+        pts = cap.meta["points"]
+    if tier == "C":
+        fy, cy = _modes(pts[:, 1])
+    else:
+        # A sparse reconstruction puts points where there is texture, which is
+        # furniture and posters, not blank ceilings. There is no dense band for
+        # a mode to find, so the extremes of the cloud stand in for the two
+        # surfaces, trimmed to shed stray triangulations.
+        fy, cy = (float(np.percentile(pts[:, 1], 1.0)),
+                  float(np.percentile(pts[:, 1], 99.0)))
     axes = walls.detect(pts, fy, cy)
 
     # Resample frames and re-detect, so the room's intervals carry the same
     # pose disagreement the ceiling interval does rather than an assumed value.
-    clouds = [c for c in (lidar.to_world_points(f) for f in cap.frames) if len(c)]
-    rng = np.random.default_rng(0)
-    draws = []
-    print(f"bootstrap {args.wall_draws} wall refits", end="", flush=True)
-    for _ in range(args.wall_draws):
-        pick = rng.integers(0, len(clouds), len(clouds))
-        sub = np.vstack([clouds[i] for i in pick])
-        d = walls.refit(axes, sub, fy, cy)
-        if d is not None:
-            draws.append(d)
-        print(".", end="", flush=True)
-    print()
+    if tier == "C":
+        clouds = [c for c in (lidar.to_world_points(f) for f in cap.frames)
+                  if len(c)]
+        rng = np.random.default_rng(0)
+        draws = []
+        print(f"bootstrap {args.wall_draws} wall refits", end="", flush=True)
+        for _ in range(args.wall_draws):
+            pick = rng.integers(0, len(clouds), len(clouds))
+            sub = np.vstack([clouds[i] for i in pick])
+            d = walls.refit(axes, sub, fy, cy)
+            if d is not None:
+                draws.append(d)
+            print(".", end="", flush=True)
+        print()
+    else:
+        # On the camera tiers the scale comes from a prior on how high the
+        # operator held the phone, and its spread swamps every other source of
+        # error. Resampling points would report a tighter interval than the
+        # scale itself justifies, so the interval is the prior, propagated.
+        clouds = [pts]
+        draws = []
+        rng = np.random.default_rng(0)
+        for s_factor in np.linspace(cap.meta["scale_lo"], cap.meta["scale_hi"], 24):
+            d = walls.refit(axes, pts * s_factor, fy * s_factor, cy * s_factor)
+            if d is not None:
+                draws.append(d)
 
     rm = room_mod.build(axes, height, name=args.name, draws=draws)
     if rm is not None:

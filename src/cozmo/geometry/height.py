@@ -172,6 +172,22 @@ MIN_DRAWS = 20
 FALLBACK_HALF_WIDTH = 0.05
 
 
+def _sparse_separation(clouds: list[np.ndarray], tau: float = ENVELOPE_TAU
+                       ) -> float | None:
+    """Floor to ceiling on a reconstruction with no dense surface bands.
+
+    Structure from motion puts points where there is texture, which in a room
+    means furniture and posters rather than blank plaster. There is no dense
+    band for a mode to find, so the surfaces are the extremes of the cloud,
+    trimmed to shed stray triangulations.
+    """
+    y = np.vstack(clouds)[:, 1]
+    if len(y) < 200:
+        return None
+    return float(np.percentile(y, 100 - tau * 100)
+                 - np.percentile(y, tau * 100))
+
+
 def _envelope_separation(clouds: list[np.ndarray], tau: float = ENVELOPE_TAU
                          ) -> float | None:
     pts = np.vstack(clouds)
@@ -190,6 +206,21 @@ def _envelope_separation(clouds: list[np.ndarray], tau: float = ENVELOPE_TAU
 # --------------------------------------------------------------------------
 
 
+def _clouds_of(capture: Capture) -> list[np.ndarray]:
+    """World points, per frame where we have depth, in one lump where we do not.
+
+    The LiDAR tier gives a cloud per frame, which is what the frame bootstrap
+    resamples. The camera tiers give one reconstruction with no per-frame
+    depth at all, so they arrive as a single cloud and take their interval from
+    the scale prior instead.
+    """
+    if capture.frames and capture.frames[0].depth is not None:
+        out = [p for p in (to_world_points(f) for f in capture.frames) if len(p)]
+        return out if len(out) >= 4 else []
+    pts = capture.meta.get("points")
+    return [pts] if pts is not None and len(pts) else []
+
+
 def ceiling_height(capture: Capture, method: str = "envelope",
                    bootstrap: int = 200, seed: int = 0,
                    sigma_step: float = 0.002) -> Measurement:
@@ -198,11 +229,13 @@ def ceiling_height(capture: Capture, method: str = "envelope",
     method: "drift" (default), or "per_frame" / "pooled", both kept as the
         before-states for the fix-loop ablation.
     """
-    clouds = [p for p in (to_world_points(f) for f in capture.frames) if len(p)]
-    if len(clouds) < 4:
+    clouds = _clouds_of(capture)
+    if not clouds:
         raise ValueError("not enough frames with usable depth")
 
-    if method == "envelope":
+    if method == "sparse":
+        estimate = _sparse_separation
+    elif method == "envelope":
         estimate = _envelope_separation
     elif method == "drift":
         from .drift import height_from_clouds
@@ -217,6 +250,15 @@ def ceiling_height(capture: Capture, method: str = "envelope",
     point = estimate(clouds)
     if point is None:
         raise ValueError("could not separate floor and ceiling planes")
+
+    if len(clouds) < 4:
+        return Measurement(
+            value=point, lo=point * 0.93, hi=point * 1.07, unit="m",
+            provenance=("depth:inferred", "pose:sfm",
+                        f"scale:{capture.meta.get('scale_source', 'unknown')}",
+                        f"method:{method}",
+                        "interval:scale_prior_±7pct"),
+            n=len(clouds))
 
     rng = np.random.default_rng(seed)
     n = len(clouds)
