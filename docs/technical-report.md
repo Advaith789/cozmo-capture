@@ -212,8 +212,16 @@ three rooms. No ingest was written for either. The walk-in test can only be
 served at the LiDAR tier. This is the biggest gap in the submission and it is a
 scope decision, not an oversight.
 
-**No opening detection.** The tightest gate in the brief, ≤2 cm on ≥85% of
-openings, is unscored. Polycam finds our doors and windows and we do not.
+**Opening detection exists but we do not claim the gate.** The detector finds
+holes in a fitted wall: a region with no returns bounded by returns, classified
+by whether it reaches the floor. On a good wall it lands within 0.2 cm of the
+taped door. But its widths swing by up to a factor of two across frame counts,
+because the occupancy grid has gaps wherever the scan missed, and the gate is
+2 cm. Requiring an opening to survive resampling of the frames removed the worst
+phantoms and cut the count from four to two, but did not stabilise the widths.
+Output is tagged `status:EXPERIMENTAL` and reported with an honest interval
+rather than claimed. A phantom opening scores as harshly as a missed one, so
+claiming this would cost more than it earns.
 
 **No stitched multi-room plan.** Five rooms measured individually. The whole
 property plan that the brief calls the product surface does not exist.

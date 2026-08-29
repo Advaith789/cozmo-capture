@@ -1,6 +1,6 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-29T17:58:25+00:00",
+  "generated": "2026-08-29T19:18:22+00:00",
   "capture": {
     "source": "8_29_2026 - My room 2.zip",
     "tier": "C",
@@ -175,7 +175,60 @@
           "planarity_cm": 1.29
         }
       ],
-      "openings": []
+      "openings_status": "experimental, not claimed against the opening gate: widths vary by a factor of two across frame counts",
+      "openings": [
+        {
+          "wall_index": 0,
+          "kind": "door",
+          "width_m": 0.88,
+          "height_m": 1.48,
+          "sill_m": 0.0,
+          "width_ci": [
+            0.854,
+            1.306
+          ],
+          "border_confidence": 1.0,
+          "provenance": [
+            "depth:measured",
+            "method:wall_plane_hole",
+            "status:EXPERIMENTAL"
+          ]
+        },
+        {
+          "wall_index": 2,
+          "kind": "window",
+          "width_m": 0.92,
+          "height_m": 0.92,
+          "sill_m": 1.32,
+          "width_ci": [
+            0.88,
+            0.946
+          ],
+          "border_confidence": 1.0,
+          "provenance": [
+            "depth:measured",
+            "method:wall_plane_hole",
+            "status:EXPERIMENTAL"
+          ]
+        },
+        {
+          "wall_index": 2,
+          "kind": "window",
+          "width_m": 0.8,
+          "height_m": 1.28,
+          "sill_m": 0.96,
+          "width_ci": [
+            0.76,
+            0.84
+          ],
+          "border_confidence": 1.0,
+          "provenance": [
+            "depth:measured",
+            "method:wall_plane_hole",
+            "status:EXPERIMENTAL"
+          ]
+        }
+      ]
     }
   ],
   "stitched_plan": {
@@ -235,7 +288,7 @@
     }
   ],
   "known_limitations": [
-    "Openings not yet detected; the opening-width gate is unscored.",
+    "Opening detection is EXPERIMENTAL and is not claimed against the opening-width gate: widths vary by up to a factor of two across frame counts, against a 2 cm gate.",
     "Damage regions not implemented.",
     "Single-room capture: no stitched multi-room plan or adjacency.",
     "Tiers A and B ingest not implemented."

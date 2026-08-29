@@ -122,6 +122,7 @@ def cmd_run(args: argparse.Namespace) -> int:
 
         from cozmo.contract import render, schema
         from cozmo.geometry import room as room_mod
+        from cozmo.geometry import openings as openings_mod
         from cozmo.geometry import walls
         from cozmo.geometry.height import _modes, ceiling_height
         from cozmo.ingest import lidar
@@ -171,6 +172,11 @@ def cmd_run(args: argparse.Namespace) -> int:
     print()
 
     rm = room_mod.build(axes, height, name=args.name, draws=draws)
+    if rm is not None:
+        stable = openings_mod.find_stable(clouds, rm.walls, fy, cy,
+                                          draws=max(6, args.wall_draws // 6))
+        rm.openings.extend((i, o) for i, o, _, _ in stable)
+        rm.opening_ci.extend((lo, hi) for _, _, lo, hi in stable)
     if rm is None:
         print("error: could not close a room polygon from the detected walls",
               file=sys.stderr)
@@ -194,7 +200,9 @@ def cmd_run(args: argparse.Namespace) -> int:
           for i, m in enumerate(rm.wall_lengths)],
     ]
     notes = [
-        "Openings not yet detected; the opening-width gate is unscored.",
+        "Opening detection is EXPERIMENTAL and is not claimed against the "
+        "opening-width gate: widths vary by up to a factor of two across "
+        "frame counts, against a 2 cm gate.",
         "Damage regions not implemented.",
         "Single-room capture: no stitched multi-room plan or adjacency.",
         "Tiers A and B ingest not implemented.",
@@ -210,6 +218,13 @@ def cmd_run(args: argparse.Namespace) -> int:
     print(f"ceiling height   {rm.ceiling_height}")
     for i, m in enumerate(rm.wall_lengths):
         print(f"  wall {i}         {m}")
+    if rm.openings:
+        print(f"\nopenings         {len(rm.openings)} found  (EXPERIMENTAL, gate not claimed)")
+        for k, (idx, o) in enumerate(rm.openings):
+            lo, hi = rm.opening_ci[k] if k < len(rm.opening_ci) else (o.width, o.width)
+            print(f"  wall {idx}          {o.kind:<6} width {o.width:.3f} m "
+                  f"[{lo:.3f}, {hi:.3f}]  ({o.width * 39.3701:.1f} in)")
+
     print("\ngates")
     for g in gates:
         acc = (f"  accuracy {g['error_m'] * 100:+.1f} cm "

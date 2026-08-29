@@ -70,7 +70,24 @@ def room_json(room: Room) -> dict[str, Any]:
             }
             for w in room.walls
         ],
-        "openings": [],   # populated once opening detection lands
+        "openings_status": "experimental, not claimed against the opening gate: "
+                            "widths vary by a factor of two across frame counts",
+        "openings": [
+            {
+                "wall_index": idx,
+                "kind": o.kind,
+                "width_m": round(o.width, 4),
+                "height_m": round(o.height, 4),
+                "sill_m": round(o.sill, 4),
+                "width_ci": [round(room.opening_ci[k][0], 4),
+                             round(room.opening_ci[k][1], 4)]
+                if k < len(room.opening_ci) else None,
+                "border_confidence": round(o.confidence, 2),
+                "provenance": ["depth:measured", "method:wall_plane_hole",
+                               "status:EXPERIMENTAL"],
+            }
+            for k, (idx, o) in enumerate(room.openings)
+        ],
     }
 
 

@@ -8,11 +8,12 @@ exactly where the geometry is best defined.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
 from ..types import Measurement
+from .openings import Opening
 from .walls import RoomAxes, Wall
 
 
@@ -25,6 +26,8 @@ class Room:
     perimeter: Measurement
     ceiling_height: Measurement
     wall_lengths: list[Measurement]
+    openings: list[tuple[int, Opening]] = field(default_factory=list)
+    opening_ci: list[tuple[float, float]] = field(default_factory=list)
 
 
 def _intersect(a: Wall, b: Wall) -> np.ndarray | None:
