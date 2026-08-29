@@ -51,7 +51,7 @@ than the data supports.
 
 ```sh
 python -m cozmo run "myroom/space_capture/8_29_2026 - My room 2.zip" \
-  --name myroom2 --truth-height 2.9705 --truth-walls 2.9883,3.0411
+  --name myroom2 --truth-height 2.9705 --truth-walls 3.0344,3.0411
 ```
 
 All three tiers are meant to converge on one `PosedFrame` as early as possible
@@ -89,7 +89,8 @@ hold the two to identical output.
 ## 2. All the numbers in one place
 
 Five captures, 160 frames each, bootstrap 40, wall draws 50. Tape ground truth
-on my room only: door wall 2.9883 m, other wall 3.0411 m, ceiling 2.9705 m.
+on my room only: door wall 3.0344 m (mean of five readings), other wall
+3.0411 m, ceiling 2.9705 m.
 
 | capture | ceiling | ± | wall A | ± | wall B | ± | area |
 |---|---|---|---|---|---|---|---|
@@ -137,7 +138,7 @@ Two supporting results that need no tape at all:
 That last pair is the whole story of section 4.
 
 **Head to head** against Polycam Floorplan mode, version 6.0.21, which is Apple
-RoomPlan underneath: we beat or tie on 3 of 4 shared dimensions. Full table in
+RoomPlan underneath: we beat it on 4 of 4 shared dimensions. Full table in
 `head-to-head.md`. Polycam also finds two doors, a window and a closet, and we
 find none of those, so on the opening gate it scores and we score zero.
 

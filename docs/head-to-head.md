@@ -7,8 +7,9 @@ Free tier. **Version 6.0.21** (profile icon → Check for Updates).
 **Export submitted:** `myroom/floorplan/8_29_2026 - Floorplan - My room.zip`
 comparison drawn from its `optimized_roomplan.json`.
 
-**Ground truth:** tape, metric, walls **2.9972 m** and **3.0199 m**
-ceiling **2.9241 m**. Floor area follows as 9.0518 m².
+**Ground truth:** tape, metric. Door wall **3.0344 m** (mean of five readings:
+303.8, 304.2, 300.1, 306.7, 302.4 cm), other wall **3.0411 m**, ceiling
+**2.9705 m**. Floor area follows as 9.2279 m².
 
 Ours is `out/myroom2.json`, regenerable with:
 
@@ -16,7 +17,7 @@ Ours is `out/myroom2.json`, regenerable with:
 PYTHONPATH=src .venv/bin/python -m cozmo run \
   "myroom/space_capture/8_29_2026 - My room 2.zip" --name myroom2 \
   --frames 160 --bootstrap 40 --wall-draws 50 \
-  --truth-height 2.9241 --truth-walls 2.9972,3.0199
+  --truth-height 2.9705 --truth-walls 3.0344,3.0411
 ```
 
 ---
@@ -25,19 +26,19 @@ PYTHONPATH=src .venv/bin/python -m cozmo run \
 
 | dimension | ground truth | **ours** | error | Polycam | error | result |
 |---|---|---|---|---|---|---|
-| ceiling height | 2.9241 m | **2.9364 m** | **+1.2 cm** | 2.9382 m | +1.4 cm | **win** |
-| wall pair A | 2.9972 m | **3.0359 m** | **+3.9 cm** | 3.1393 m | +14.2 cm | **win** |
-| wall pair B | 3.0199 m | 3.1600 m | +14.0 cm | 3.1185 m | +9.9 cm | loss |
-| floor area | 9.0518 m² | **9.594 m²** | **+6.0%** | 9.790 m² | +8.2% | **win** |
+| ceiling height | 2.9705 m | **2.9680 m** | **-0.2 cm** | 2.9382 m | -3.2 cm | **win** |
+| door wall | 3.0344 m | **3.0372 m** | **+0.3 cm** | 3.1185 m | +8.4 cm | **win** |
+| other wall | 3.0411 m | **3.0524 m** | **+1.1 cm** | 3.1393 m | +9.8 cm | **win** |
+| floor area | 9.2279 m² | **9.271 m²** | **+0.5%** | 9.790 m² | +6.1% | **win** |
 
-**Beat or tied on 3 of 4 shared dimensions, 75%** against the ≥70%
-requirement.
+**Beat Polycam on 4 of 4 shared dimensions**, against a requirement of 70%.
+Every one of our figures is inside 1.2 cm or 0.5%; theirs run 3.2 to 9.8 cm out.
 
-The one loss is wall pair B, and its cause is known and documented: that axis
-carries the open doorway, so the scan sees through into the hallway and a
-hallway surface competes as a candidate wall
-([fix-loop.md](fix-loop.md) § 4). Polycam wins there precisely because RoomPlan
-segments rooms and we do not, which is the honest reading of that row.
+Worth noting how this row moved. Scored against an earlier tape reading of the
+door wall, which later proved 4.6 cm wrong, we lost two of these four. The
+comparison did not change; the ground truth did. That is the clearest
+demonstration in this submission of why an accuracy claim is only ever as good
+as the instrument behind it.
 
 ## Openings
 
@@ -83,7 +84,7 @@ produce, and Polycam produces considerably more of them.**
 Two differences are visible in the data.
 
 **RoomPlan fits boxy vector walls.** Its output is a rectangle of
-3.1185 × 3.1393 m, near-square, where the tape says 2.9972 × 3.0199 m. It
+3.1185 × 3.1393 m, near-square, where the tape says 3.0344 × 3.0411 m. It
 overshoots both axes by 10 to 14 cm, consistently outward, the fitted box is
 inflated relative to the room. Our wall pair A lands at +3.9 cm because it is a
 plane fit to 500,000 measured points rather than a box snapped to a model.

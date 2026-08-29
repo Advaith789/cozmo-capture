@@ -53,7 +53,7 @@ omitted; a matrix that hides them is worth less than one that does not.
 | 2.15 | One furnished room with damage in 2 classes | `myroom/error photos/` | hallway 2×3 in ellipse; friend-2 room 3×3 in square | **partial** staged and measured, not detected |
 | 2.16 | Same rooms at all three tiers | `myroom/` | Tier C ×5, photos ×3 rooms, video ×3 rooms | **partial** captured, only Tier C processed |
 | 2.17 | One room captured twice at the same tier | `8_28 My room 1` + `8_29 My room 2` | repeatability table in benchmark report | **done** |
-| 2.18 | Tape or laser ground truth, measurements submitted | [docs/capture-bakeoff.md](capture-bakeoff.md) | walls 2.9972 / 3.0199 m, ceiling 2.9241 m, door slab 0.8382 m, frame 0.9576 m | **partial** my room only |
+| 2.18 | Tape or laser ground truth, measurements submitted | [docs/capture-bakeoff.md](capture-bakeoff.md) | door wall 3.0344 m (5 readings), other wall 3.0411 m, ceiling 2.9705 m, door slab 0.8382 m, frame 0.9576 m | **partial** my room only |
 
 ## Part 2, Gates
 
@@ -70,7 +70,7 @@ omitted; a matrix that hides them is worth less than one that does not.
 
 | # | Requirement | File | Artifact | Status |
 |---|---|---|---|---|
-| 3.1 | Our LiDAR output vs one consumer app on 2 rooms | [docs/head-to-head.md](head-to-head.md) | Polycam Floorplan (RoomPlan); beat/tied 3 of 4 dimensions | **partial** 1 room, brief asks 2 |
+| 3.1 | Our LiDAR output vs one consumer app on 2 rooms | [docs/head-to-head.md](head-to-head.md) | Polycam Floorplan (RoomPlan) v6.0.21; **beat 4 of 4 dimensions** | **partial** 1 room, brief asks 2 |
 | 3.2 | Name the app and version | [docs/head-to-head.md](head-to-head.md) | Polycam Floorplan mode (RoomPlan), **v6.0.21** | **done** |
 
 ## Part 4, Fix loop

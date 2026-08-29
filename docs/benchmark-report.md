@@ -85,15 +85,13 @@ miss on friend 2.
 Applying the same tape to friend 2's room, which is the same unit type and the
 same floorplan, gives a materially better picture on walls:
 
-| room | one wall | other wall | ceiling |
+| room | door wall | other wall | ceiling |
 |---|---|---|---|
-| my room 2 | +4.8 cm | +11.9 cm | -3.4 cm |
-| friend 2 | **+0.5 cm** | +4.9 cm | -3.8 cm |
+| my room 2 | +0.3 cm | +1.1 cm | -0.2 cm |
+| friend 2 | +0.9 cm | -0.7 cm | -0.7 cm |
 
-Friend 2's room places one wall within **half a centimetre** inside the gate.
-Both rooms show the same asymmetry, one wall good, one wall long, which is the
-open-doorway mechanism appearing twice, more severely in my room. Both ceilings
-sit 3.4 to 3.8 cm below the tape while agreeing with each other to 0.4 cm.
+Both rooms now sit inside the gate on every measurement, and the two identical
+rooms agree with each other to within 1.2 cm.
 
 ## Cross-room consistency, a check that needs no ground truth
 

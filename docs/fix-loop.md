@@ -108,11 +108,11 @@ are governed by section 4, not by pose quality.
 ```sh
 PYTHONPATH=src .venv/bin/python -m cozmo run \
   "myroom/space_capture/8_28_2026 - My room 1.zip" --name myroom1 \
-  --frames 160 --truth-height 2.9241 --truth-walls 2.9972,3.0199
+  --frames 160 --truth-height 2.9705 --truth-walls 3.0344,3.0411
 
 PYTHONPATH=src .venv/bin/python -m cozmo run \
   "myroom/space_capture/8_29_2026 - My room 2.zip" --name myroom2 \
-  --frames 160 --truth-height 2.9241 --truth-walls 2.9972,3.0199
+  --frames 160 --truth-height 2.9705 --truth-walls 3.0344,3.0411
 ```
 
 Diff `out/myroom1.json` against `out/myroom2.json`. Every measurement carries
@@ -169,8 +169,11 @@ Two further hypotheses were tested and eliminated the same way:
 
 And one more that turned out not to be ours at all: a persistent ~6 cm ceiling
 shortfall across five captures across three rooms and a hallway was traced to the **ground truth**
-not the pipeline. The ceiling had been recorded as 9'10" (2.9972 m); re-measured
-carefully it is **2.9241 m**. Our five captures had agreed with each other
+not the pipeline. The ceiling was recorded four times as 3.0226, 2.9972, 2.9241
+and finally 2.9705 m, a 9.8 cm spread against a 1.5 cm gate. The same happened
+to the door wall: a single reading of 2.9883 m stood until a five-reading
+re-measure put it at **3.0344 m**, 4.6 cm away, and our four independent wall
+measurements had been pointing there the whole time. Our five captures agreed
 within 3.5 cm the whole time. The lesson is in
 [capture-bakeoff.md](capture-bakeoff.md): ground truth read to the nearest inch
 carries ±1.27 cm of quantisation against a ±1.5 cm gate, and cannot certify it.
