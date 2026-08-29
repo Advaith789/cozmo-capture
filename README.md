@@ -73,6 +73,14 @@ the non-compliant one, and stops on the second.
 If it says NO GO, ask to re-capture. That is a far better outcome than running
 the pipeline on a capture that cannot support a measurement.
 
+**If Developer Mode was missed**, there is no raw export and the LiDAR tier has
+nothing to read. That used to be a total loss. It is now a fallback: ask for a
+plain mesh export instead (OBJ or PLY, no Developer Mode needed) and point the
+same command at it. Measured against tape on our own room the mesh path landed
+at -0.4, +0.5 and +1.5 cm, inside the gate on all three, in 1.3 seconds. What it
+cannot do is resample frames, so its intervals are assumed rather than measured
+and it says so.
+
 `run` takes about 45 seconds and writes a JSON contract and a dimensioned SVG
 plan. It applies a rectangular-room prior only where the walls justify it, and
 records in the provenance how far out of square the room actually was.

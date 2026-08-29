@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="869" height="915" viewBox="0 0 869 915">
+<style>.wall{fill:#f4f6f7;stroke:#1b2226;stroke-width:5;stroke-linejoin:round}.dim{stroke:#d14a16;stroke-width:1.2}.tick{stroke:#d14a16;stroke-width:1.2}text{font-family:ui-monospace,Menlo,monospace;fill:#1b2226}.d{font-size:12px;fill:#a03608}.ci{font-size:9.5px;fill:#6e7c84}.t{font-size:15px;font-weight:600}.s{font-size:10.5px;fill:#6e7c84}</style>
+<rect width="869" height="915" fill="#ffffff"/>
+<text class="t" x="90" y="26">meshtest</text>
+<text class="s" x="90" y="42">floor area 9.29 m² (±15 cm²) · ceiling 2.966 m ±20.8 cm</text>
+<polygon class="wall" points="418.7,824.9 778.7,497.9 450.0,136.0 90.0,463.0"/>
+<line class="dim" x1="418.7" y1="824.9" x2="778.7" y2="497.9" transform="translate(10.8,11.8)"/>
+<text class="d" x="618.9" y="683.6" text-anchor="middle">3.040 m</text>
+<text class="ci" x="618.9" y="695.6" text-anchor="middle">±2.5 cm</text>
+<line class="dim" x1="778.7" y1="497.9" x2="450.0" y2="136.0" transform="translate(11.8,-10.8)"/>
+<text class="d" x="636.6" y="296.8" text-anchor="middle">3.056 m</text>
+<text class="ci" x="636.6" y="308.8" text-anchor="middle">±2.4 cm</text>
+<line class="dim" x1="450.0" y1="136.0" x2="90.0" y2="463.0" transform="translate(-10.8,-11.8)"/>
+<text class="d" x="249.8" y="277.3" text-anchor="middle">3.040 m</text>
+<text class="ci" x="249.8" y="289.3" text-anchor="middle">±2.5 cm</text>
+<line class="dim" x1="90.0" y1="463.0" x2="418.7" y2="824.9" transform="translate(-11.8,10.8)"/>
+<text class="d" x="232.2" y="664.1" text-anchor="middle">3.056 m</text>
+<text class="ci" x="232.2" y="676.1" text-anchor="middle">±2.4 cm</text>
+</svg>

@@ -15,18 +15,32 @@ import zipfile
 from pathlib import Path
 
 
+MESH_EXT = {".obj", ".ply"}
+
+
 def detect_tier(path: Path) -> str:
-    """Identify the tier from the shape of the input, not from a flag."""
+    """Identify the tier from the shape of the input, not from a flag.
+
+    "M" is the mesh fallback: a Polycam export taken without Developer Mode,
+    which has no raw data but still carries the surfaces we measure.
+    """
+    if path.is_file() and path.suffix.lower() in MESH_EXT:
+        return "M"
     if path.is_file() and path.suffix.lower() in {".mov", ".mp4", ".m4v"}:
         return "B"
     if path.is_file() and zipfile.is_zipfile(path):
         with zipfile.ZipFile(path) as z:
-            if any(n.startswith("keyframes/") for n in z.namelist()):
+            names = z.namelist()
+            if any(n.startswith("keyframes/") for n in names):
                 return "C"
+            if any(n.lower().endswith((".obj", ".ply")) for n in names):
+                return "M"
         return "A"
     if path.is_dir():
         if (path / "keyframes").is_dir():
             return "C"
+        if any(p.suffix.lower() in MESH_EXT for p in path.rglob("*")):
+            return "M"
         if any(p.suffix.lower() in {".mov", ".mp4", ".m4v"} for p in path.rglob("*")):
             return "B"
         if any(p.suffix.lower() in {".jpg", ".jpeg", ".heic", ".heif", ".png"}
@@ -81,7 +95,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
         pts = np.vstack([lidar.to_world_points(f) for f in cap.frames])
     else:
         pts = cap.meta["points"]
-    if tier == "C":
+    if tier in ("C", "M"):
         fy, cy = _modes(pts[:, 1])
     else:
         # A sparse reconstruction puts points where there is texture, which is
@@ -131,7 +145,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         from cozmo.geometry import openings as openings_mod
         from cozmo.geometry import walls
         from cozmo.geometry.height import _modes, ceiling_height
-        from cozmo.ingest import camera, lidar
+        from cozmo.ingest import camera, lidar, mesh
     except ImportError as exc:
         print(f"error: the pipeline needs its dependencies: {exc}", file=sys.stderr)
         print("       python3 -m venv .venv && .venv/bin/pip install -r "
@@ -142,6 +156,8 @@ def cmd_run(args: argparse.Namespace) -> int:
     try:
         if tier == "C":
             cap = lidar.load(path, max_frames=args.frames)
+        elif tier == "M":
+            cap = mesh.load(path)
         elif tier == "B":
             cap = camera.load_video(path)
         else:
@@ -155,7 +171,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     print(f"frames    {cap.meta['loaded']} of {cap.meta['total_keyframes']}")
 
     try:
-        method = args.height_method if tier == "C" else "sparse"
+        method = args.height_method if tier in ("C", "M") else "sparse"
         height = ceiling_height(cap, method=method,
                                 bootstrap=args.bootstrap,
                                 sigma_step=args.sigma_step)
@@ -168,7 +184,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         pts = np.vstack([lidar.to_world_points(f) for f in cap.frames])
     else:
         pts = cap.meta["points"]
-    if tier == "C":
+    if tier in ("C", "M"):
         fy, cy = _modes(pts[:, 1])
     else:
         # A sparse reconstruction puts points where there is texture, which is
@@ -335,6 +351,12 @@ def cmd_check(args: argparse.Namespace) -> int:
         return 1
 
     print(f"capture   {path.name}\ntier      {tier}")
+    if tier == "M":
+        print("\nGO (fallback)  no raw export, so Developer Mode was off. The "
+              "mesh still measures\n               to within about a "
+              "centimetre, but intervals are assumed rather\n               "
+              "than resampled. Prefer a raw export if you can re-capture.")
+        return 0
     if tier != "C":
         print("\nNO GO     only the LiDAR tier measures reliably. Ask for a "
               "Polycam Space capture with Developer Mode on.")

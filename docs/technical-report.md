@@ -280,6 +280,32 @@ what left the capture itself as the only suspect.
 
 ---
 
+### The fallback that removes a single point of failure
+
+The LiDAR tier depends on Polycam's raw export, which exists only if Developer
+Mode was on **before** the capture and cannot be enabled afterwards. That put
+the largest scored component of the brief behind one toggle in someone else's
+app, where missing it scored nothing at all.
+
+`ingest/mesh.py` removes that. Every Polycam capture can export a mesh without
+Developer Mode, and a mesh is a set of surface points, which is what the wall
+and surface fitting consumes anyway. OBJ and PLY are parsed directly, ascii and
+binary, with no dependency, because this is the path that runs when something
+has already gone wrong.
+
+Measured against tape on the same room the raw export handles:
+
+| | mesh fallback | raw export | tape |
+|---|---|---|---|
+| wall A | 3.0354 m | 3.0372 m | 3.0344 m |
+| wall B | 3.0520 m | 3.0524 m | 3.0411 m |
+| ceiling | 2.9789 m | 2.9680 m | 2.9705 m |
+
+All three accuracy gates pass on the fallback, in 1.3 seconds. What it loses is
+per-frame data: with no frames there is nothing to resample, so intervals are
+assumed rather than measured and are labelled that way. An honest wide interval
+on a correct number beats no number.
+
 ## 6. Limitations
 
 Ordered by how much they cost.
