@@ -31,7 +31,26 @@ Measured so far: 95 keyframes/min, so the 700-frame pose-optimisation budget
 is 7.3 minutes of scanning. Raw ARKit poses drifted a median 5.3 cm and up to
 42 cm over a single 2.5-minute room scan.
 
-First pipeline output, on that scan:
+Ground truth (tape): the room is a near-cube, 9'10" = **2.9972 m** on the
+measured wall and floor-to-ceiling.
+
+First wall measurement, from fitted wall planes:
+
+```
+axis B    2.9956 m   vs tape 2.9972   -0.2 cm   PASSES the 1.5 cm gate
+```
+
+Reached by detecting walls as planes rather than measuring the spread of
+points. The percentile approaches it replaced returned anywhere from 2.37 m to
+4.10 m on the same data depending on the trim chosen — the plane fit is
+immune to both the furniture that occludes the floor before the wall and the
+noise that sprays past it.
+
+Two correctness checks that need no ground truth both pass: the recovered room
+axes are orthogonal to machine precision, and each opposing wall pair is
+parallel to within 1e-4.
+
+Ceiling height output, same scan:
 
 ```
 ceiling height   2.9638 m [2.8524, 2.9796]  (±6.36 cm, n=60)
@@ -40,10 +59,45 @@ gate ≤1.5 cm     FAIL
 
 Reported as a failure because it is one. The estimate agrees with Polycam's
 independent mesh to 7 cm, which validates the ingest chain, but the interval is
-four times the gate. The cause is measured, not guessed: the fitted floor and
-ceiling planes are 8–9.5 cm thick, where a real floor is flat to a millimetre.
-That thickness is pose error smeared across pooled frames — the leading
-candidate for the fix loop.
+four times the gate.
+
+Fitting planes per frame instead of pooling did **not** improve the interval
+(±7.40 cm vs ±6.36 cm). It did split the error into its two parts, which is
+what mattered:
+
+| source | measured |
+|---|---|
+| depth sensor (within-frame residual) | **0.55 cm** floor, 0.80 cm ceiling |
+| pose disagreement (between-frame spread) | **4.22 cm** floor, 4.04 cm ceiling |
+
+The sensor is already five to eight times better than the gate needs. Every bit
+of the error is in the poses — and these are Polycam's *loop-closed* poses, so
+roughly 4 cm of residual drift survives its correction.
+
+`geometry/drift.py` implements plane-anchored correction, and building it
+surfaced the real problem. Of 120 keyframes, 67 observed the floor, 27 the
+ceiling, and **1 observed both**. Correcting frames against the surfaces they
+saw leaves the floor group and the ceiling group in two disconnected
+components, so the *distance between the planes* — the measurement itself — is
+not observable from the plane fits at all. It links only through a temporal
+smoothness prior, and the answer then slides with that prior's strength:
+
+| σ_step (m/frame) | height |
+|---|---|
+| 1e-6 (ablation, no correction) | 2.8860 m |
+| 1e-3 | 2.9461 m |
+| 2e-3 | 2.9621 m |
+| 1e-2 | 3.0206 m |
+
+13.5 cm of range on a tuning parameter, against a 1.5 cm gate. **This capture
+does not contain the information needed to measure its own ceiling height.** No
+algorithm recovers that; the fix belongs in the capture protocol, which already
+says to tilt down to the floor line and up to the ceiling line at every corner.
+That instruction exists precisely to create frames that see both.
+
+Also measured: the ceiling appears in only **12 of 60 frames** against the
+floor's 35. The protocol's "tilt up at every corner" needs enforcing in the
+benchmark capture.
 
 No accuracy claim is made. The interval above is precision. Whether 2.9638 m is
 *correct* needs tape or laser ground truth, which the benchmark step is
@@ -178,6 +232,7 @@ shots in § 3.5 of the protocol exist to supply those edges.
 
 ```sh
 PYTHONPATH=src .venv/bin/python -m cozmo measure myroom/8_28_2026.zip
+PYTHONPATH=src .venv/bin/python -m cozmo measure <capture> --ablate   # drift on/off
 ```
 
 Tier is detected from the input shape, not passed in — Tier C runs today, A and

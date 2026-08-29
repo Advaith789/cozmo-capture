@@ -179,6 +179,34 @@ to recovering motion from pixels alone; it may hand us rotation for free.
 
 Shot at 30 fps rather than the 60 the protocol asks for in dim rooms.
 
+## Ground truth — first entry
+
+| room | quantity | tape | notes |
+|---|---|---|---|
+| myroom | ceiling height | 9 ft 11 in = **3.0226 m** | handheld tape, reported to the nearest inch |
+
+Scored against it:
+
+| estimator | height | error |
+|---|---|---|
+| mode (shipped) | 2.9568 m | −6.6 cm |
+| median of band | 2.9413 m | −8.1 cm |
+| p2 / p98 envelope | 3.0358 m | +1.3 cm |
+| p5 / p95 envelope | 3.0253 m | +0.3 cm |
+| p10 / p90 envelope | 3.0162 m | −0.6 cm |
+| Polycam mesh bbox | 3.0300 m | +0.7 cm |
+| building spec (10 ft) | 3.0480 m | +2.5 cm |
+
+Confirms the mode estimator is biased low and that an envelope fit is the right
+direction. Does **not** calibrate which envelope — p2, p5 and p10 span 2 cm and
+picking the one that matches would be fitting a parameter to a single room.
+
+**The ground truth is not precise enough to score this gate.** Reported to the
+nearest inch, the quantisation alone is ±1.27 cm against a ±1.5 cm gate, before
+any handheld error from holding a tape to a 10-foot ceiling. A laser measure
+reading to millimetres is required before any accuracy number here is
+defensible.
+
 ## Field observations
 
 **Export is slow and it crashed.** A 2.5-minute scan took roughly 20–25 minutes
