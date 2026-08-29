@@ -166,6 +166,11 @@ def _per_frame_separation(clouds: list[np.ndarray]) -> float | None:
 # it is recorded in the technical report rather than hidden here.
 ENVELOPE_TAU = 0.05
 
+# Below this many successful bootstrap draws the spread is not a distribution.
+MIN_DRAWS = 20
+# What we claim instead, clearly labelled as an assumption, not a measurement.
+FALLBACK_HALF_WIDTH = 0.05
+
 
 def _envelope_separation(clouds: list[np.ndarray], tau: float = ENVELOPE_TAU
                          ) -> float | None:
@@ -220,7 +225,17 @@ def ceiling_height(capture: Capture, method: str = "envelope",
               for _ in range(bootstrap))
              if h is not None]
 
-    lo, hi = np.percentile(draws, [2.5, 97.5]) if len(draws) > 20 else (point, point)
+    # Too few successful draws cannot describe a distribution. Collapsing to a
+    # zero-width interval would let a number with no uncertainty estimate walk
+    # through a precision gate, so we fall back to a stated assumption and say
+    # so in the provenance rather than reporting false confidence.
+    if len(draws) >= MIN_DRAWS:
+        lo, hi = np.percentile(draws, [2.5, 97.5])
+        interval_prov = f"bootstrap:frames×{len(draws)}"
+    else:
+        lo, hi = point - FALLBACK_HALF_WIDTH, point + FALLBACK_HALF_WIDTH
+        interval_prov = (f"interval:ASSUMED_±{FALLBACK_HALF_WIDTH * 100:.0f}cm"
+                         f"_only_{len(draws)}_draws")
 
     pose = ("device_optimised" if PoseSource.DEVICE_OPTIMISED in capture.pose_sources
             else "device_raw")
@@ -229,7 +244,7 @@ def ceiling_height(capture: Capture, method: str = "envelope",
         provenance=("depth:measured", f"pose:{pose}", "scale:sensor",
                     f"method:{method}",
                     *((f"sigma_step:{sigma_step}",) if method == "drift" else ()),
-                    f"bootstrap:frames×{len(draws)}"),
+                    interval_prov),
         n=len(clouds),
     )
 

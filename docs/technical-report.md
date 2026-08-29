@@ -238,6 +238,12 @@ pipeline. It also degrades on thin captures: scan 1 sampled the ceiling in only
 well covered capture. Arguably correct behaviour, but it costs us the
 repeatability gate.
 
+**A short run cannot report precision.** Below 20 successful bootstrap draws
+the spread is not a distribution, so the interval falls back to a stated
+assumption tagged `interval:ASSUMED_*` rather than collapsing to zero width. We
+found this by pointing the tool at things it had not seen: a low draw count used
+to report ±0.00 cm and sail through the precision gate.
+
 **We assume rooms are rectangular.** `square_up=True` snaps wall normals to the
 room axes and it moved gates from fail to pass. It will misreport a genuinely
 non-rectangular room. `square_up=False` exists and reports wider intervals.

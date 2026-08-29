@@ -27,9 +27,10 @@ def detect_tier(path: Path) -> str:
     if path.is_dir():
         if (path / "keyframes").is_dir():
             return "C"
-        imgs = [p for p in path.rglob("*")
-                if p.suffix.lower() in {".jpg", ".jpeg", ".heic", ".heif", ".png"}]
-        if imgs:
+        if any(p.suffix.lower() in {".mov", ".mp4", ".m4v"} for p in path.rglob("*")):
+            return "B"
+        if any(p.suffix.lower() in {".jpg", ".jpeg", ".heic", ".heif", ".png"}
+               for p in path.rglob("*")):
             return "A"
     raise ValueError(f"{path}: cannot tell which tier this is")
 
@@ -97,31 +98,59 @@ def cmd_measure(args: argparse.Namespace) -> int:
 
 def cmd_run(args: argparse.Namespace) -> int:
     """One command per capture: raw export in, JSON contract and plan out."""
-    import numpy as np
-
-    from cozmo.contract import render, schema
-    from cozmo.geometry import room as room_mod
-    from cozmo.geometry import walls
-    from cozmo.geometry.height import _modes, ceiling_height
-    from cozmo.ingest import lidar
-
     path = Path(args.capture)
     if not path.exists():
         print(f"error: {path} does not exist", file=sys.stderr)
         return 1
 
-    tier = detect_tier(path)
+    try:
+        tier = detect_tier(path)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        print("       expected a Polycam raw export (.zip or folder with "
+              "keyframes/), a photo folder, or a video file.", file=sys.stderr)
+        return 1
+
     print(f"capture   {path.name}\ntier      {tier}")
     if tier != "C":
-        print(f"\nTier {tier} ingest is not implemented yet.")
+        print(f"\nTier {tier} ingest is not implemented yet. "
+              f"Only the LiDAR tier runs today.")
         return 2
 
+    try:
+        import numpy as np
+
+        from cozmo.contract import render, schema
+        from cozmo.geometry import room as room_mod
+        from cozmo.geometry import walls
+        from cozmo.geometry.height import _modes, ceiling_height
+        from cozmo.ingest import lidar
+    except ImportError as exc:
+        print(f"error: the pipeline needs its dependencies: {exc}", file=sys.stderr)
+        print("       python3 -m venv .venv && .venv/bin/pip install -r "
+              "requirements.txt", file=sys.stderr)
+        return 1
+
     t0 = time.time()
-    cap = lidar.load(path, max_frames=args.frames)
+    try:
+        cap = lidar.load(path, max_frames=args.frames)
+    except Exception as exc:
+        print(f"error: could not read {path.name}: "
+              f"{type(exc).__name__}: {exc}", file=sys.stderr)
+        print("       the archive may be truncated or still copying. "
+              "Re-export and try again.", file=sys.stderr)
+        return 1
     print(f"frames    {cap.meta['loaded']} of {cap.meta['total_keyframes']}")
 
-    height = ceiling_height(cap, method=args.height_method,
-                            bootstrap=args.bootstrap, sigma_step=args.sigma_step)
+    try:
+        height = ceiling_height(cap, method=args.height_method,
+                                bootstrap=args.bootstrap,
+                                sigma_step=args.sigma_step)
+    except Exception as exc:
+        print(f"error: could not measure ceiling height: {exc}", file=sys.stderr)
+        print("       the capture may not show enough floor and ceiling. "
+              "Re-scan tilting up and down at each corner.", file=sys.stderr)
+        return 3
     pts = np.vstack([lidar.to_world_points(f) for f in cap.frames])
     fy, cy = _modes(pts[:, 1])
     axes = walls.detect(pts, fy, cy)
