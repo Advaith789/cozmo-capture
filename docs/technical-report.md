@@ -7,7 +7,7 @@ Route 2, stock tooling. Polycam for the LiDAR tier, the native iOS Camera for
 photos and video. Built in 48 hours, which shows in places, and we say where.
 
 A word on the benchmark set: it is 1.3 GB and it filled the capture phone
-completely. Four rooms, a hallway, five LiDAR scans, three video walkthroughs
+completely. Three rooms, a hallway, five LiDAR scans, three video walkthroughs
 and about 140 photos later, iOS started refusing to save anything. Two of those
 scans exist because the first one was captured badly enough to be worth keeping
 as a counter-example, which turned out to be the most useful accident in the
@@ -40,6 +40,19 @@ flowchart TD
 ```
 
 Green is built and running. Red is captured but not processed.
+
+### What comes out
+
+![Example floor plan](figures/example-plan.svg)
+
+One command per capture. Every dimension on the plan carries its own confidence
+interval, because a plan that prints a number without one invites more trust
+than the data supports.
+
+```sh
+python -m cozmo run "myroom/space_capture/8_29_2026 - My room 2.zip" \
+  --name myroom2 --truth-height 2.9705 --truth-walls 2.9883,3.0411
+```
 
 All three tiers are meant to converge on one `PosedFrame` as early as possible
 so the geometry gets written once instead of three times. Tier C fills every
@@ -80,33 +93,39 @@ on my room only: door wall 2.9883 m, other wall 3.0411 m, ceiling 2.9705 m.
 
 | capture | ceiling | ± | wall A | ± | wall B | ± | area |
 |---|---|---|---|---|---|---|---|
-| my room 2 | 2.9364 | 1.23 | 3.0372 | 0.82 | 3.0524 | 1.22 | 9.271 m² |
-| my room 1 | 2.9479 | 1.83 | 3.0256 | 1.76 | 3.0028 | 1.66 | 9.085 m² |
-| friend 2 | 2.9322 | 1.10 | 3.0434 | 0.77 | 3.0345 | 3.11 | 9.235 m² |
-| friend 1 | 2.8889 | 2.49 | 3.7654 | 0.68 | 3.3603 | 0.77 | 12.653 m² |
-| hallway | 2.9389 | 2.07 | 3.7578 | 2.17 | 7.5027 | 4.02 | 28.193 m² |
+| my room 2 | 2.9680 | 0.76 | 3.0372 | 0.82 | 3.0524 | 1.22 | 9.271 m² |
+| my room 1 | 3.0271 | 0.70 | 3.0256 | 1.76 | 3.0028 | 1.66 | 9.085 m² |
+| friend 2 | 2.9631 | 0.50 | 3.0434 | 0.77 | 3.0345 | 3.11 | 9.235 m² |
+| friend 1 | 2.9873 | 1.09 | 3.7654 | 0.68 | 3.3603 | 0.77 | 12.653 m² |
+| hallway | 2.9969 | 0.76 | 3.7578 | 2.17 | 7.5027 | 4.02 | 28.193 m² |
 
-Gates, where we hold tape:
+Gates, on the three captures where we hold tape:
 
 | capture | gate | precision | accuracy |
 |---|---|---|---|
-| my room 2 | ceiling | ±1.23 **PASS** | -3.4 fail |
+| my room 2 | ceiling | ±0.76 **PASS** | **-0.2 PASS** |
 | my room 2 | door wall | ±0.82 **PASS** | +4.9 fail |
 | my room 2 | other wall | ±1.22 **PASS** | **+1.1 PASS** |
-| friend 2 | ceiling | ±1.10 **PASS** | -3.8 fail |
+| friend 2 | ceiling | ±0.50 **PASS** | **-0.7 PASS** |
 | friend 2 | door wall | ±0.77 **PASS** | +5.5 fail |
 | friend 2 | other wall | ±3.11 fail | **-0.7 PASS** |
-| my room 1 | all three | fail | fail |
+| my room 1 | ceiling | ±0.70 **PASS** | +5.7 fail |
+| my room 1 | door wall | ±1.76 fail | +3.7 fail |
+| my room 1 | other wall | ±1.66 fail | -3.8 fail |
 
-**Precision passes 5 of 6** on the two compliant captures. Accuracy passes on
-both "other wall" measurements. Scan 1 fails everything, which is the point of
-section 4.
+**Ceiling precision passes in all five captures**, ±0.50 to ±1.09 cm. Overall
+precision passes 10 of 15 scored gates; accuracy passes 4 of 9.
+
+Everything that fails accuracy is the door wall, or scan 1. The door wall reads
++3.7 to +5.5 cm long in every capture, and the two identical rooms agree with
+each other to within 2 cm while both disagreeing with that one tape figure by
+about 5 cm. We do not treat it as settled which side is wrong.
 
 Two supporting results that need no tape at all:
 
 | check | result |
 |---|---|
-| identical rooms, ceiling | agree to **0.4 cm** |
+| identical rooms, ceiling | agree to **0.5 cm** |
 | identical rooms, walls | agree to **0.6 and 1.8 cm** |
 | depth sensor, within frame | 0.55 cm |
 | pose disagreement, between frames | 4.22 cm |
@@ -159,6 +178,17 @@ with identical lighting in both, so it was not a light problem.
 dwells, plus automated compliance scoring at ingest so a bad capture gets
 flagged the moment it lands instead of at scoring time.
 
+![How to scan a room](figures/how-to-scan.svg)
+
+The two reference frames the protocol now ships with, both taken from this
+benchmark set. Left: tilt up, because ceiling height and wall lengths come off
+that junction line. Right: tilt down and sweep both frame edges, because that
+is where opening widths would come from.
+
+| | |
+|---|---|
+| ![Ceiling junction at a corner](figures/corner-ceiling-line.svg) | ![Doorway and floor junction](figures/doorway-floor-line.svg) |
+
 **Predicted:** drift under 2 cm, ceiling gate moving to pass.
 **Got:** drift 0.9 cm, ceiling precision ±1.83 to ±1.23, both inside the gate.
 
@@ -197,6 +227,16 @@ rather than solves. An open doorway still feeds the neighbouring room into the
 fit; raising the sample above 1.30 m dodges most of it because doorways are
 holes in the lower wall, but a tall opening or a pass through would still break
 it.
+
+**The ceiling estimator has a tuned constant.** It locates each surface at a tail
+quantile of the point cloud rather than its densest band, because clutter sits on
+floors and light fittings hang below ceilings. The quantile, tau = 0.05, was
+chosen by testing against tape on two rooms, and moving it across 0.02 to 0.10
+shifts the answer by about 2.3 cm. That is the single largest model risk in the
+pipeline. It also degrades on thin captures: scan 1 sampled the ceiling in only
+27 of 120 frames and the estimator lands 5.7 cm out there, against 0.2 cm on a
+well covered capture. Arguably correct behaviour, but it costs us the
+repeatability gate.
 
 **We assume rooms are rectangular.** `square_up=True` snaps wall normals to the
 room axes and it moved gates from fail to pass. It will misreport a genuinely

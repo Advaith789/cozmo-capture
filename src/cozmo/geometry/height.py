@@ -153,11 +153,39 @@ def _per_frame_separation(clouds: list[np.ndarray]) -> float | None:
 
 
 # --------------------------------------------------------------------------
+# method: envelope  (default)
+# --------------------------------------------------------------------------
+
+# Quantile used to locate each surface. A floor is the *lower* boundary of its
+# point cloud and a ceiling the *upper* one: clutter sits on floors and light
+# fittings hang below ceilings, so the densest band is inside the true surface
+# on both. Taking a tail quantile finds the boundary instead of the bulk.
+#
+# TAU was picked by testing against tape on two rooms, and moving it across
+# 0.02 to 0.10 shifts the answer by about 2.3 cm. That is a real model risk and
+# it is recorded in the technical report rather than hidden here.
+ENVELOPE_TAU = 0.05
+
+
+def _envelope_separation(clouds: list[np.ndarray], tau: float = ENVELOPE_TAU
+                         ) -> float | None:
+    pts = np.vstack(clouds)
+    y = pts[:, 1]
+    y_floor, y_ceil = _modes(y)
+    floor_band = y[(y > y_floor - 0.10) & (y < y_floor + 0.15)]
+    ceil_band = y[(y > y_ceil - 0.15) & (y < y_ceil + 0.10)]
+    if len(floor_band) < 2000 or len(ceil_band) < 2000:
+        return None
+    return float(np.quantile(ceil_band, 1.0 - tau)
+                 - np.quantile(floor_band, tau))
+
+
+# --------------------------------------------------------------------------
 # public
 # --------------------------------------------------------------------------
 
 
-def ceiling_height(capture: Capture, method: str = "drift",
+def ceiling_height(capture: Capture, method: str = "envelope",
                    bootstrap: int = 200, seed: int = 0,
                    sigma_step: float = 0.002) -> Measurement:
     """Floor-to-ceiling height with a frame-bootstrapped interval.
@@ -169,7 +197,9 @@ def ceiling_height(capture: Capture, method: str = "drift",
     if len(clouds) < 4:
         raise ValueError("not enough frames with usable depth")
 
-    if method == "drift":
+    if method == "envelope":
+        estimate = _envelope_separation
+    elif method == "drift":
         from .drift import height_from_clouds
         estimate = lambda cs: height_from_clouds(cs, sigma_step=sigma_step)  # noqa: E731
     elif method == "pooled":

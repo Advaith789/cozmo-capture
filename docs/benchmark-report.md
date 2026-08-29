@@ -19,7 +19,7 @@ PYTHONPATH=src .venv/bin/python -m cozmo run "<capture>.zip" --name <name> \
 | Friend 2 room | 1 | C | 307 | 1.5 min | 0.5 cm | 160 |
 | Connector hallway | 1 | C | 280 | 1.7 min | 0.7 cm | 400 |
 
-Four rooms plus a connector, satisfying the composition requirement. My room
+Three rooms plus a connector, which is the composition the brief asks for. My room
 appears twice at the same tier for the repeatability gate. Tiers A and B were
 captured for three of these rooms (photos and video) but **are not processed**
 no ingest exists for them.
@@ -54,8 +54,7 @@ Intervals are 95% bootstrap over frames, never over points, samples within a
 frame share that frame's pose error, so resampling points would report an
 interval of a fraction of a millimetre for data that disagrees by centimetres.
 
-**Ceiling heights cluster at 2.889 to 2.948 m across four rooms** in a building
-specified at 10-foot ceilings, agreeing with each other within 5.9 cm, against
+**Ceiling heights cluster at 2.889 to 2.948 m across three rooms and a hallway** in a building specced at 10 ft ceilings, agreeing with each other within 5.9 cm, against
 a tape whose four readings of one ceiling spanned 9.8 cm.
 
 ## Gates, accuracy, scored where ground truth exists

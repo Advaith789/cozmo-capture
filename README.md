@@ -16,7 +16,7 @@ native iOS Camera for video and photos. See
 
 Tier C runs end to end: capture → ingest → walls → ceiling → room → JSON +
 rendered plan, one command, with a bootstrapped interval on every number.
-Validated against tape on one room, run on five captures across four rooms plus
+Validated against tape on one room, run on five captures across three rooms and a hallway plus
 a connector.
 
 | Deliverable | Where | |
@@ -33,13 +33,13 @@ a connector.
 **Headline result**, my room scan 2 against tape:
 
 ```
-ceiling height   2.9364 m   precision ±1.23 cm PASS
+ceiling height   2.9680 m   precision ±0.76 cm PASS   accuracy -0.2 cm PASS
 other wall       3.0524 m   precision ±1.22 cm PASS   accuracy +1.1 cm PASS
 door wall        3.0372 m   precision ±0.82 cm PASS   accuracy +4.9 cm fail
 ```
 
-Precision passes 5 of 6 gates across the two compliant captures. Two accuracy
-gates pass, one in each room. The benchmark's ground truth turned out to be
+Ceiling precision passes in all five captures. Across the scored gates,
+precision passes 10 of 15 and accuracy 4 of 9. The benchmark's ground truth turned out to be
 less precise than the gate it was meant to certify, which is written up as a
 result rather than buried: see [technical-report.md](docs/technical-report.md)
 section 3.

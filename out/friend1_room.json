@@ -1,6 +1,6 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-29T17:28:40+00:00",
+  "generated": "2026-08-29T17:45:25+00:00",
   "capture": {
     "source": "8_29_2026 - Friend - 1 Room.zip",
     "tier": "C",
@@ -61,17 +61,16 @@
         "samples": 50
       },
       "ceiling_height": {
-        "value": 2.8889,
-        "ci_low": 2.901,
-        "ci_high": 2.9508,
-        "ci_half_width": 0.0249,
+        "value": 2.9873,
+        "ci_low": 2.9727,
+        "ci_high": 2.9946,
+        "ci_half_width": 0.0109,
         "unit": "m",
         "provenance": [
           "depth:measured",
           "pose:device_optimised",
           "scale:sensor",
-          "method:drift",
-          "sigma_step:0.002",
+          "method:envelope",
           "bootstrap:frames\u00d740"
         ],
         "samples": 160
@@ -201,8 +200,8 @@
     {
       "gate": "ceiling_height",
       "limit_m": 0.015,
-      "interval_half_width_m": 0.0249,
-      "precision_pass": false
+      "interval_half_width_m": 0.0109,
+      "precision_pass": true
     },
     {
       "gate": "wall_length_0",

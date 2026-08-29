@@ -120,8 +120,8 @@ def cmd_run(args: argparse.Namespace) -> int:
     cap = lidar.load(path, max_frames=args.frames)
     print(f"frames    {cap.meta['loaded']} of {cap.meta['total_keyframes']}")
 
-    height = ceiling_height(cap, method="drift", bootstrap=args.bootstrap,
-                            sigma_step=args.sigma_step)
+    height = ceiling_height(cap, method=args.height_method,
+                            bootstrap=args.bootstrap, sigma_step=args.sigma_step)
     pts = np.vstack([lidar.to_world_points(f) for f in cap.frames])
     fy, cy = _modes(pts[:, 1])
     axes = walls.detect(pts, fy, cy)
@@ -205,6 +205,8 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--bootstrap", type=int, default=60)
     r.add_argument("--sigma-step", dest="sigma_step", type=float, default=0.002)
     r.add_argument("--name", default="room")
+    r.add_argument("--height-method", dest="height_method", default="envelope",
+                   choices=["envelope", "drift", "per_frame", "pooled"])
     r.add_argument("--wall-draws", dest="wall_draws", type=int, default=40,
                    help="bootstrap resamples for the room's intervals")
     r.add_argument("--truth-walls", dest="truth_walls", default=None,

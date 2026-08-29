@@ -168,7 +168,7 @@ Two further hypotheses were tested and eliminated the same way:
 | grazing incidence angle | residual vs incidence, 1.26 M samples | **rejected** correlation +0.025 / -0.014 |
 
 And one more that turned out not to be ours at all: a persistent ~6 cm ceiling
-shortfall across five captures in four rooms was traced to the **ground truth**
+shortfall across five captures across three rooms and a hallway was traced to the **ground truth**
 not the pipeline. The ceiling had been recorded as 9'10" (2.9972 m); re-measured
 carefully it is **2.9241 m**. Our five captures had agreed with each other
 within 3.5 cm the whole time. The lesson is in

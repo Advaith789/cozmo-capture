@@ -2,7 +2,7 @@
 <style>.wall{fill:#f4f6f7;stroke:#1b2226;stroke-width:5;stroke-linejoin:round}.dim{stroke:#d14a16;stroke-width:1.2}.tick{stroke:#d14a16;stroke-width:1.2}text{font-family:ui-monospace,Menlo,monospace;fill:#1b2226}.d{font-size:12px;fill:#a03608}.ci{font-size:9.5px;fill:#6e7c84}.t{font-size:15px;font-weight:600}.s{font-size:10.5px;fill:#6e7c84}</style>
 <rect width="854" height="901" fill="#ffffff"/>
 <text class="t" x="90" y="26">friend2_room</text>
-<text class="s" x="90" y="42">floor area 9.24 m² (±10 cm²) · ceiling 2.932 m ±1.1 cm</text>
+<text class="s" x="90" y="42">floor area 9.24 m² (±10 cm²) · ceiling 2.963 m ±0.5 cm</text>
 <polygon class="wall" points="493.7,810.6 764.2,405.7 360.5,136.0 90.0,540.9"/>
 <line class="dim" x1="493.7" y1="810.6" x2="764.2" y2="405.7" transform="translate(13.3,8.9)"/>
 <text class="d" x="653.9" y="624.8" text-anchor="middle">3.043 m</text>
