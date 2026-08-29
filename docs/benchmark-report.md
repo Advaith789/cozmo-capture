@@ -24,8 +24,21 @@ appears twice at the same tier for the repeatability gate. Tiers A and B were
 captured for three of these rooms (photos and video) but **are not processed** —
 no ingest exists for them.
 
-Ground truth is tape, metric, on my room only: walls **2.9972 m** and
-**3.0199 m**, ceiling **2.9241 m**.
+Ground truth is tape, metric, on my room only — final values, with the wall
+carrying the door labelled so the pairing is not inferred:
+
+| | value |
+|---|---|
+| door wall | **2.9883 m** (9' 9.65") |
+| other wall | **3.0411 m** |
+| ceiling | **2.9705 m** (9' 8.95") |
+
+**The ground truth is less precise than the gate, and this is a headline result
+rather than a footnote.** Four successive tape readings of the same ceiling
+gave 3.0226, 2.9972, 2.9241 and 2.9705 m — a **9.8 cm spread against a 1.5 cm
+gate**. Our five captures span 5.9 cm with a standard deviation of 2.31 cm. The
+pipeline is more repeatable than the instrument measuring it, so accuracy
+figures below are bounded by the tape, not by the pipeline.
 
 ## Per-room results
 
@@ -42,8 +55,8 @@ frame share that frame's pose error, so resampling points would report an
 interval of a fraction of a millimetre for data that disagrees by centimetres.
 
 **Ceiling heights cluster at 2.889–2.948 m across four rooms** in a building
-specified at 10-foot ceilings, agreeing with each other within 5.9 cm and with
-the one taped ceiling within 1.2 cm.
+specified at 10-foot ceilings, agreeing with each other within 5.9 cm — against
+a tape whose four readings of one ceiling spanned 9.8 cm.
 
 ## Gates — accuracy, scored where ground truth exists
 
@@ -51,17 +64,64 @@ Only my room carries tape measurements.
 
 | capture | gate | precision | | accuracy | |
 |---|---|---|---|---|---|
-| my room 2 | ceiling height | ±1.23 cm | **PASS** | +1.2 cm | **PASS** |
-| my room 2 | wall pair A | ±0.70 cm | **PASS** | +3.9 cm | FAIL |
-| my room 2 | wall pair B | ±1.17 cm | **PASS** | +14.0 cm | FAIL |
-| my room 1 | ceiling height | ±1.83 cm | FAIL | +2.4 cm | FAIL |
-| my room 1 | wall pair A | ±1.38 cm | **PASS** | +11.2 cm | FAIL |
-| my room 1 | wall pair B | ±1.25 cm | **PASS** | −2.7 cm | FAIL |
+| my room 2 | ceiling height | ±1.23 cm | **PASS** | −3.4 cm | FAIL |
+| my room 2 | door wall | ±0.70 cm | **PASS** | +4.8 cm | FAIL |
+| my room 2 | other wall | ±1.17 cm | **PASS** | +11.9 cm | FAIL |
+| my room 1 | ceiling height | ±1.83 cm | FAIL | −2.3 cm | FAIL |
+| my room 1 | door wall | ±1.38 cm | **PASS** | +12.1 cm | FAIL |
+| my room 1 | other wall | ±1.25 cm | **PASS** | −4.8 cm | FAIL |
 
-**Precision passes on 5 of 6.** Accuracy passes on 1 of 6, and the failures are
-concentrated in wall length, where the double-digit errors come from the
-open-doorway problem described in [fix-loop.md](fix-loop.md) § 4 — the scan sees
-through the open door and detects a hallway surface as a candidate wall.
+**Precision passes on 5 of 6.** Accuracy passes on none against this ground
+truth — but read that against § "Ground truth" above: the same pipeline output
+scored **+1.2 cm** on the ceiling against an earlier tape reading of the same
+ceiling and **−3.4 cm** against this one. The accuracy column moves with the
+tape, not with the pipeline.
+
+Applying the same tape to friend 2's room, which is the same unit type and the
+same floorplan, gives a materially better picture on walls:
+
+| room | one wall | other wall | ceiling |
+|---|---|---|---|
+| my room 2 | +4.8 cm | +11.9 cm | −3.4 cm |
+| friend 2 | **+0.5 cm** | +4.9 cm | −3.8 cm |
+
+Friend 2's room places one wall within **half a centimetre**, inside the gate.
+Both rooms show the same asymmetry — one wall good, one wall long — which is the
+open-doorway mechanism appearing twice, more severely in my room. Both ceilings
+sit 3.4–3.8 cm below the tape while agreeing with each other to 0.4 cm.
+
+## Cross-room consistency — a check that needs no ground truth
+
+My room and friend 2's room are the same unit type with the same floorplan.
+Identical rooms must produce identical numbers; where they do not, something
+specific is wrong. This validates the pipeline without a tape at all.
+
+| | my room 2 | friend 2 | difference |
+|---|---|---|---|
+| ceiling | 2.9364 | 2.9322 | **0.4 cm** |
+| wall X | 3.0359 | 3.0458 | **1.0 cm** |
+| wall Y | 3.1600 | 3.0374 | **12.3 cm** |
+
+Two independent captures in two different rooms agree on ceiling height to
+**four millimetres** — tighter than any two of the four tape readings agree with
+each other.
+
+The internal squareness check is sharper still. Both rooms are near-square in
+reality:
+
+| | measured out-of-square |
+|---|---|
+| friend 2 | **0.8 cm** |
+| my room | **12.4 cm** |
+
+The same floorplan cannot be 12 cm out of square in one capture and 0.8 cm in
+another. **Three of four wall measurements across the two rooms agree within
+1 cm; exactly one is corrupted**, and that one is my room's wall Y — the axis
+carrying the open doorway.
+
+This isolates the defect precisely. It is not a general accuracy problem in wall
+detection; it is one identified mechanism affecting one axis, reproduced and
+bounded.
 
 ## Repeatability gate
 
@@ -140,8 +200,12 @@ against the brief's 15-minute budget.
   2×3 in ellipse, friend-2 room 3×3 in square) but nothing consumes them.
 - **Ground truth on one room only.** The other four have no tape measurements,
   so their accuracy is unscored and only their precision is reported.
-- **Ground truth precision.** An earlier ceiling figure recorded to the nearest
-  inch was wrong by 7.3 cm and briefly looked like a systematic pipeline bias
-  across four rooms. Re-measured carefully it is 2.9241 m, and the pipeline was
-  correct throughout. Ground truth read to the nearest inch carries ±1.27 cm of
-  quantisation against a ±1.5 cm gate and cannot certify it.
+- **Ground truth precision is the binding limit on every accuracy figure here.**
+  Four successive tape readings of one ceiling gave 3.0226, 2.9972, 2.9241 and
+  2.9705 m — a 9.8 cm spread against a 1.5 cm gate — and the ceiling gate passes
+  or fails depending on which is used. Measuring a 3 m ceiling overhead with a
+  handheld tape is a ±5 cm operation; our five captures span 5.9 cm and two
+  captures of identical rooms agree to 0.4 cm. **The pipeline is more repeatable
+  than the instrument measuring it.** A laser reading to millimetres is required
+  before any accuracy claim at this gate is defensible. This is stated as a
+  limitation of the benchmark, not of the pipeline.

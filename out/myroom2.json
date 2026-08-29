@@ -1,6 +1,6 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-29T15:50:30+00:00",
+  "generated": "2026-08-29T17:15:36+00:00",
   "capture": {
     "source": "8_29_2026 - My room 2.zip",
     "tier": "C",
@@ -203,17 +203,17 @@
       "limit_m": 0.015,
       "interval_half_width_m": 0.0123,
       "precision_pass": true,
-      "ground_truth_m": 2.9241,
-      "error_m": 0.0123,
-      "accuracy_pass": true
+      "ground_truth_m": 2.9705,
+      "error_m": -0.0341,
+      "accuracy_pass": false
     },
     {
       "gate": "wall_length_0",
       "limit_m": 0.015,
       "interval_half_width_m": 0.007,
       "precision_pass": true,
-      "ground_truth_m": 2.9972,
-      "error_m": 0.0387,
+      "ground_truth_m": 2.9883,
+      "error_m": 0.0476,
       "accuracy_pass": false
     },
     {
@@ -221,8 +221,8 @@
       "limit_m": 0.015,
       "interval_half_width_m": 0.0117,
       "precision_pass": true,
-      "ground_truth_m": 3.0199,
-      "error_m": 0.1401,
+      "ground_truth_m": 3.0411,
+      "error_m": 0.1189,
       "accuracy_pass": false
     },
     {
@@ -230,8 +230,8 @@
       "limit_m": 0.015,
       "interval_half_width_m": 0.007,
       "precision_pass": true,
-      "ground_truth_m": 2.9972,
-      "error_m": 0.0387,
+      "ground_truth_m": 2.9883,
+      "error_m": 0.0476,
       "accuracy_pass": false
     },
     {
@@ -239,8 +239,8 @@
       "limit_m": 0.015,
       "interval_half_width_m": 0.0117,
       "precision_pass": true,
-      "ground_truth_m": 3.0199,
-      "error_m": 0.1401,
+      "ground_truth_m": 3.0411,
+      "error_m": 0.1189,
       "accuracy_pass": false
     }
   ],
