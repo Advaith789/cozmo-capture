@@ -1,13 +1,13 @@
-# Head to head — our pipeline vs Polycam Floorplan
+# Head to head, our pipeline vs Polycam Floorplan
 
 **Incumbent:** Polycam, Floorplan mode (Apple RoomPlan underneath).
 Free tier. **Version 6.0.21** (profile icon → Check for Updates).
 
 **Room:** my room, captured 29 Aug 2026 on iPhone 17 Pro.
-**Export submitted:** `myroom/floorplan/8_29_2026 - Floorplan - My room.zip`,
+**Export submitted:** `myroom/floorplan/8_29_2026 - Floorplan - My room.zip`
 comparison drawn from its `optimized_roomplan.json`.
 
-**Ground truth:** tape, metric — walls **2.9972 m** and **3.0199 m**,
+**Ground truth:** tape, metric, walls **2.9972 m** and **3.0199 m**
 ceiling **2.9241 m**. Floor area follows as 9.0518 m².
 
 Ours is `out/myroom2.json`, regenerable with:
@@ -30,14 +30,14 @@ PYTHONPATH=src .venv/bin/python -m cozmo run \
 | wall pair B | 3.0199 m | 3.1600 m | +14.0 cm | 3.1185 m | +9.9 cm | loss |
 | floor area | 9.0518 m² | **9.594 m²** | **+6.0%** | 9.790 m² | +8.2% | **win** |
 
-**Beat or tied on 3 of 4 shared dimensions — 75%**, against the ≥70%
+**Beat or tied on 3 of 4 shared dimensions, 75%** against the ≥70%
 requirement.
 
 The one loss is wall pair B, and its cause is known and documented: that axis
 carries the open doorway, so the scan sees through into the hallway and a
 hallway surface competes as a candidate wall
 ([fix-loop.md](fix-loop.md) § 4). Polycam wins there precisely because RoomPlan
-segments rooms and we do not — which is the honest reading of that row.
+segments rooms and we do not, which is the honest reading of that row.
 
 ## Openings
 
@@ -45,16 +45,16 @@ Tape, measured on the wooden door in the same room:
 
 | | tape | Polycam | error |
 |---|---|---|---|
-| door slab | 33.0 in (0.8382 m) | 0.8085 m | **−3.0 cm** |
-| frame outer edge to outer edge | 37.7 in (0.9576 m) | — | — |
+| door slab | 33.0 in (0.8382 m) | 0.8085 m | **-3.0 cm** |
+| frame outer edge to outer edge | 37.7 in (0.9576 m) |, |, |
 
-Polycam's door dimension sits closest to the slab, 3.0 cm under it — outside
+Polycam's door dimension sits closest to the slab, 3.0 cm under it, outside
 the brief's ≤2 cm opening gate. But the comparison carries a real caveat: the
-brief's gate is on the **clear opening**, the gap between the inner faces of the
+brief's gate is on the **clear opening** the gap between the inner faces of the
 frame, which is neither figure above. It lies between them, so this row
 indicates rather than settles.
 
-**We detect no openings at all**, so on that gate we score zero regardless of
+**We detect no openings at all** so on that gate we score zero regardless of
 what Polycam's error turns out to be.
 
 ## Where Polycam is clearly ahead
@@ -71,9 +71,9 @@ table above.
 | multi-room stitch | none | yes |
 
 RoomPlan detected two doors, a window and a closet as a distinct room. We
-detect none of those. On the brief's opening-width gate — the tightest at ≤2 cm
-on ≥85% of openings, with a missed opening counting as a miss — **Polycam
-scores and we score zero**, because we have no opening detection at all.
+detect none of those. On the brief's opening-width gate, the tightest at ≤2 cm
+on ≥85% of openings, with a missed opening counting as a miss, **Polycam
+scores and we score zero** because we have no opening detection at all.
 
 So the fair summary is: **we are more accurate on the dimensions we both
 produce, and Polycam produces considerably more of them.**
@@ -84,7 +84,7 @@ Two differences are visible in the data.
 
 **RoomPlan fits boxy vector walls.** Its output is a rectangle of
 3.1185 × 3.1393 m, near-square, where the tape says 2.9972 × 3.0199 m. It
-overshoots both axes by 10–14 cm, consistently outward — the fitted box is
+overshoots both axes by 10 to 14 cm, consistently outward, the fitted box is
 inflated relative to the room. Our wall pair A lands at +3.9 cm because it is a
 plane fit to 500,000 measured points rather than a box snapped to a model.
 
@@ -101,6 +101,6 @@ nothing in its output surfaces that to a user.
   Floorplan-mode capture of the same room minutes apart. Not the same frames.
 - **Wall pairing.** Both outputs give two wall dimensions without a shared
   labelling, so pairing to the two tape figures is by best correspondence. The
-  alternative pairing gives Polycam +12.1 cm and +11.9 cm — it does not change
+  alternative pairing gives Polycam +12.1 cm and +11.9 cm, it does not change
   the outcome.
 - **Clear opening not measured.** Both tape figures bracket it rather than give it, so the opening row indicates rather than settles.

@@ -7,7 +7,7 @@ Device: iPhone 17 Pro (LiDAR) · Date: 2026-08-28 · Tier C run complete
 
 ---
 
-## Before you capture — two iPhone settings
+## Before you capture, two iPhone settings
 
 These two decide whether the files survive the trip to the laptop. Both must be
 set *before* the capture, not after.
@@ -23,22 +23,22 @@ says `.jpeg`; this is the cheapest way to make that true at the source.
 
 ---
 
-## Capture — one room, all three tiers
+## Capture, one room, all three tiers
 
 Same room for all three, back to back. A small-to-medium room with at least one
-door, one window, and ideally one non-rectangular feature (alcove, island,
+door, one window, and ideally one non-rectangular feature (alcove, island
 angled wall). That last one matters later for the head-to-head.
 
-While you are standing in it, tape-measure and write down: three wall lengths,
+While you are standing in it, tape-measure and write down: three wall lengths
 ceiling height, one door width. Five numbers, two minutes. This room becomes a
 free sanity check and saves a second trip.
 
-- [ ] **Tier C — Polycam Space.** Developer Mode confirmed on. Walk the
-      perimeter, 1–3 m off the walls, hold at each corner. Deliberately loop
-      back over your start point at the end — we want to see whether loop
+- [ ] **Tier C, Polycam Space.** Developer Mode confirmed on. Walk the
+      perimeter, 1 to 3 m off the walls, hold at each corner. Deliberately loop
+      back over your start point at the end, we want to see whether loop
       closure fires. Let it process. Export → Raw.
-- [ ] **Tier B — native Camera, 4K30.** Continuous, unpaused, same room.
-- [ ] **Tier A — native Camera stills.** 5 or 6 overlapping shots, ~70% overlap.
+- [ ] **Tier B, native Camera, 4K30.** Continuous, unpaused, same room.
+- [ ] **Tier A, native Camera stills.** 5 or 6 overlapping shots, ~70% overlap.
       Put them in a folder named for the room.
 
 Ground truth measured:
@@ -72,7 +72,7 @@ Tier C does not need a cable. Tiers A and B are better with one.
 python3 scripts/inspect_capture.py myroom/8_28_2026.zip
 ```
 
-## Tier C — result
+## Tier C, result
 
 **Run: 2026-08-28, one bedroom, 2.5 min of scanning, 35.7 MB, 1183 files.**
 
@@ -85,7 +85,7 @@ python3 scripts/inspect_capture.py myroom/8_28_2026.zip
   mesh_info.json · polycam.mp4 · thumbnail.jpg      (top level, no wrapper folder)
 
   duration 149 s · 95 frames/min
-  depth   256×192, 16-bit PNG, millimetres, 0.77–2.54 m observed
+  depth   256×192, 16-bit PNG, millimetres, 0.77 to 2.54 m observed
   images  1024×768 JPEG · fx = fy = 719.13, cx = 511.85, cy = 382.70
   confidence  0 / 54 / 255  →  6% / 17% / 77%
   drift corrected by the optimiser: median 5.3 cm, p90 26.0 cm, max 42.2 cm
@@ -98,7 +98,7 @@ from the export, not the documentation.
 
 | Documented | Actual |
 |---|---|
-| Everything nested under one capture folder | **No wrapper** — `keyframes/` and the JSONs sit at the archive root |
+| Everything nested under one capture folder | **No wrapper** `keyframes/` and the JSONs sit at the archive root |
 | `raw.glb` | Absent |
 | `corrected_images/` | Absent |
 | Confidence levels `0 / 127 / 255` | **`0 / 54 / 255`** |
@@ -111,7 +111,7 @@ from the export, not the documentation.
 `center_depth` · `exposure_time` · `iso` · `shutter_speed` · `thermal_state`
 
 - `tracking_segment` increments when tracking is lost and re-initialised. Poses
-  either side of a break share no common frame — this is the single most
+  either side of a break share no common frame, this is the single most
   important flag for the drift work, and nothing in the docs mentions it.
 - `blur_score` ranged 5 → 325 across one scan. Frame selection material.
 - `angular_velocity` (median 0.46, max 2.51 rad/s) measures whether the operator
@@ -119,9 +119,9 @@ from the export, not the documentation.
   *audited* from the capture rather than trusted.
 - `iso` / `exposure_time` detect the low-light case the brief asks us to cover.
 
-**`corrected_cameras/` drops all of them.** It keeps only pose, intrinsics,
+**`corrected_cameras/` drops all of them.** It keeps only pose, intrinsics
 `blur_score`, `manual_keyframe`, and adds `weakly_connected`. So ingest must
-**join raw and corrected by filename stem** — corrected poses, raw metadata.
+**join raw and corrected by filename stem** corrected poses, raw metadata.
 
 **Drift is large and the loop-back worked.** Global optimisation moved cameras
 by a median of 5.3 cm and up to 42.2 cm over a 2.5-minute single-room scan.
@@ -130,18 +130,18 @@ unusable on their own, and our own correction stage is measured against
 Polycam's corrected poses, not against zero.
 
 **Frame rate is 95/min, so the pose-optimisation budget is a time budget:**
-700 frames ≈ **7.3 minutes**, 1400 ≈ 14.7 minutes. The protocol's 6–8 minute
+700 frames ≈ **7.3 minutes** 1400 ≈ 14.7 minutes. The protocol's 6 to 8 minute
 session cap was an estimate; it is now arithmetic.
 
 **Images are 1024×768, not full resolution.** Polycam downsamples for the raw
 export. Depth is exactly ¼ of that (256×192), so depth intrinsics are the image
 intrinsics ÷ 4. Worth noting for damage detection, which wants pixels.
 
-**`mesh_info.json` gives a free sanity check** — `bboxSize` [3.23, 3.03, 4.10] m
+**`mesh_info.json` gives a free sanity check** `bboxSize` [3.23, 3.03, 4.10] m
 and per-direction surface areas including `horizontalUpArea` 7.28 m². Useful as
 a cross-check against our own room measurements.
 
-## Tier A — result
+## Tier A, result
 
 **21 stills, HEIC, 5712×4284 (24 MP), 53 MB. Transferred by cable + Image Capture.**
 
@@ -149,37 +149,37 @@ a cross-check against our own room measurements.
   EXIF recovered      21/21          ← the thing this run existed to test
   Make / Model        Apple iPhone 17 Pro
   FocalLength         6.765 mm  (24 mm equivalent)
-  ISO                 median 1000, range 640–1600
+  ISO                 median 1000, range 640 to 1600
   ExposureTime        21/21 slower than 1/60 s, longest 1/30
 ```
 
-**HEIC, not JPEG — and that is the better outcome.** It is the camera's native
+**HEIC, not JPEG, and that is the better outcome.** It is the camera's native
 format, so nothing re-encoded on the way out and EXIF came through whole. The
 protocol's "Most Compatible" step was written to guarantee readability, not
-fidelity; ingest now decodes HEIC directly (`_scan_tiff` — HEIC stores the same
+fidelity; ingest now decodes HEIC directly (`_scan_tiff`, HEIC stores the same
 TIFF block without a JPEG marker to anchor on), so the conversion is
 unnecessary and we should stop asking for it.
 
-**21 exceeds the brief's cap of 2–8 stills per room.** Fine as a format check;
+**21 exceeds the brief's cap of 2 to 8 stills per room.** Fine as a format check;
 the benchmark set has to subset down.
 
-**Still underlit.** ISO median 1000 is better than the LiDAR scan's pinned 3200,
-but every exposure ran slower than 1/60 s and the longest was 1/30 — handshake
+**Still underlit.** ISO median 1000 is better than the LiDAR scan's pinned 3200
+but every exposure ran slower than 1/60 s and the longest was 1/30, handshake
 blur territory. The photo tier has no depth sensor to fall back on, so this
 costs geometry directly rather than merely costing tracking.
 
-## Tier B — result
+## Tier B, result
 
 **1920×1080 HEVC (`hvc1`), 41.4 s, 1242 frames at 30.0 fps, 63 MB.**
 
 Nine tracks, not one: 1 video, 2 audio, 6 timed metadata. **Two of the metadata
-tracks carry exactly 1242 samples — frame-synced with the video.** Apple writes
+tracks carry exactly 1242 samples, frame-synced with the video.** Apple writes
 per-frame camera metadata there. Worth decoding before the video tier resorts
 to recovering motion from pixels alone; it may hand us rotation for free.
 
 Shot at 30 fps rather than the 60 the protocol asks for in dim rooms.
 
-## Ground truth — first entry
+## Ground truth, first entry
 
 | room | quantity | tape | notes |
 |---|---|---|---|
@@ -189,16 +189,16 @@ Scored against it:
 
 | estimator | height | error |
 |---|---|---|
-| mode (shipped) | 2.9568 m | −6.6 cm |
-| median of band | 2.9413 m | −8.1 cm |
+| mode (shipped) | 2.9568 m | -6.6 cm |
+| median of band | 2.9413 m | -8.1 cm |
 | p2 / p98 envelope | 3.0358 m | +1.3 cm |
 | p5 / p95 envelope | 3.0253 m | +0.3 cm |
-| p10 / p90 envelope | 3.0162 m | −0.6 cm |
+| p10 / p90 envelope | 3.0162 m | -0.6 cm |
 | Polycam mesh bbox | 3.0300 m | +0.7 cm |
 | building spec (10 ft) | 3.0480 m | +2.5 cm |
 
 Confirms the mode estimator is biased low and that an envelope fit is the right
-direction. Does **not** calibrate which envelope — p2, p5 and p10 span 2 cm and
+direction. Does **not** calibrate which envelope, p2, p5 and p10 span 2 cm and
 picking the one that matches would be fitting a parameter to a single room.
 
 **The ground truth is not precise enough to score this gate.** Reported to the
@@ -209,8 +209,8 @@ defensible.
 
 ## Field observations
 
-**Export is slow and it crashed.** A 2.5-minute scan took roughly 20–25 minutes
-to process and export, and Polycam froze partway through — the operator had to
+**Export is slow and it crashed.** A 2.5-minute scan took roughly 20 to 25 minutes
+to process and export, and Polycam froze partway through, the operator had to
 force-quit and reopen, at which point the file had been written. This is the
 biggest risk to the walk-in test and it is now in § 7 of the protocol.
 
@@ -219,8 +219,8 @@ export separately, because we currently cannot tell which stage was slow.
 
 ## Still open
 
-- [ ] Tier A photo set — not yet captured
-- [ ] Tier B video walkthrough — not yet captured
+- [ ] Tier A photo set, not yet captured
+- [ ] Tier B video walkthrough, not yet captured
 - [ ] Polycam version number, for pinning in the submission
 - [ ] A second Tier C run to time processing vs export separately, and to see
       whether the freeze reproduces
@@ -230,6 +230,6 @@ export separately, because we currently cannot tell which stage was slow.
 ## Open question carried forward
 
 We only have a Pro phone. The walk-in test may hand us a base iPhone 15, which
-has no LiDAR — so tiers A and B must be validated as if captured on a base
+has no LiDAR, so tiers A and B must be validated as if captured on a base
 device. Check that neither tier's ingest path reads depth, ProRAW, or any other
 Pro-only field that would be absent on the day.

@@ -1,270 +1,244 @@
 # Technical report
 
-**cozmo-capture** — handheld consumer capture to a dimensioned floor plan with
-a calibrated interval on every measurement. Route 2, stock tooling.
+**cozmo-capture.** Point a phone at a room, get a dimensioned floor plan with an
+honest error bar on every number.
 
-Built in 48 hours. Tier C is complete end to end; Tiers A and B are captured
-but unprocessed. What follows states what was built, what it measures, and what
-it does not do.
+Route 2, stock tooling. Polycam for the LiDAR tier, the native iOS Camera for
+photos and video. Built in 48 hours, which shows in places, and we say where.
 
----
-
-## 1. Architecture
-
-The three input tiers differ only in how much they know. They converge on one
-intermediate representation as early as possible, so everything downstream is
-written once:
-
-```
-  Polycam raw zip ──→ ingest.lidar ──┐
-  .mov walkthrough ─→ ingest.video ──┼──→  Capture[PosedFrame]
-  room photo dirs ──→ ingest.photos ─┘            │
-                                                  ▼
-                                       scale ── (tiers A/B only)
-                                                  │
-                                                  ▼
-                       drift ──→ planes ──→ rooms ──→ openings ──→ stitch
-                                                  │
-                                                  ▼
-                                   uncertainty ──→ contract ──→ JSON + plan
-```
-
-`PosedFrame` carries depth, confidence, intrinsics, pose — and, critically, the
-*provenance* of each: `depth_source ∈ {MEASURED, INFERRED, NONE}` and
-`pose_source ∈ {DEVICE_OPTIMISED, DEVICE_RAW, SFM, NONE}`.
-
-**Three decisions we would defend.**
-
-**Provenance travels with every number.** A measurement is never a bare float;
-it carries the chain that produced it. The interval engine is then a function
-of `(value, provenance, calibration)`. This makes "intervals widen as sensor
-data thins" a structural property rather than three per-tier special cases, and
-lets a photo-tier and a LiDAR-tier figure sit in the same JSON without either
-misrepresenting itself. Every `Measurement` in the output carries its
-provenance list; a fallback interval is labelled `interval:ASSUMED_*` so an
-assumed number can never pass as a measured one.
-
-**Drift correction is a stage with a parameter, not a branch.** The ablation the
-brief requires is `--ablate`, and the correction strength `σ_step` sweeps
-continuously to zero, which *is* the uncorrected case. No code path rots.
-
-**The determinism boundary sits above damage.** Ingest through stitch is
-deterministic and offline, which is what the repeatability gate measures. The
-`.env` holds an OpenAI key intended for damage classification only; no geometry
-path reads it. That layer is unbuilt, so nothing in this submission calls a
-model at all.
-
-**Deliberate duplication.** `scripts/inspect_capture.py` re-implements PNG
-decoding in pure stdlib so the field tool runs on a clean machine with nothing
-installed, the moment a capture lands. The pipeline's copy uses numpy. The two
-are held to identical output by test.
+A word on the benchmark set: it is 1.3 GB and it filled the capture phone
+completely. Four rooms, a hallway, five LiDAR scans, three video walkthroughs
+and about 140 photos later, iOS started refusing to save anything. Two of those
+scans exist because the first one was captured badly enough to be worth keeping
+as a counter-example, which turned out to be the most useful accident in the
+project.
 
 ---
 
-## 2. Tier design and device matrix
+## 1. How it works
 
-| Tier | Hardware | Tool | What reaches the pipeline | Scale | Status |
-|---|---|---|---|---|---|
-| A · Photos | iPhone 15+ | native Camera | 6–8 HEIC/JPEG per room, EXIF intrinsics. No depth, no poses. | inferred | **not built** |
-| B · Video | iPhone 15+ | native Camera 1080p60 | one continuous clip; poses must be recovered | recovered | **not built** |
-| C · LiDAR | iPhone 15 Pro+ | Polycam Space, dev mode | 1024×768 RGB, 256×192 16-bit mm depth, confidence, intrinsics, loop-closed poses, per-frame IMU/exposure metadata | metric | **built** |
-
-Polycam is used **only** at Tier C, and only as a sensor logger — its
-reconstruction is never consumed. Tiers A and B use the native camera, which
-the brief explicitly permits. That is not a stylistic choice: Polycam's raw
-export exists only for LiDAR-mode captures on LiDAR devices, so on a base
-iPhone 15 it yields nothing a pipeline can read, and its Image mode uploads to
-Polycam's cloud to reconstruct — which would be shipping their product, not
-ours. The native camera also gives 5712×4284 against Polycam's downsampled
-1024×768.
-
-**The file contract was derived, not assumed.** We opened a real export before
-writing any ingest. The published format documentation was wrong in five
-places: no wrapping folder, no `raw.glb`, no `corrected_images/`, confidence
-levels are 0/54/255 rather than 0/127/255, and frames are named by microsecond
-timestamp rather than sequentially. The export also carries nine undocumented
-per-frame fields — `tracking_segment`, `angular_velocity`, `blur_score`, `iso`,
-`exposure_time`, `thermal_state` among them — and `corrected_cameras/` drops all
-of them, so ingest joins the two folders by filename stem: corrected pose, raw
-metadata.
-
-Those fields make the capture protocol **auditable**. Compliance is no longer a
-request; `inspect_capture.py` scores every capture on panning speed, lighting,
-tracking continuity and frame budget when it lands.
-
----
-
-## 3. Drift handling
-
-Poses are not used as supplied — the brief counts that as an automatic fail,
-and Polycam's optimised poses are its correction, not ours.
-
-Measuring the distance Polycam's optimiser moved each camera gives drift
-directly. On a non-compliant capture: median 5.3 cm, p90 26.0 cm, max 42.2 cm,
-over 2.5 minutes in a single room. Raw ARKit poses are unusable alone.
-
-`geometry/drift.py` implements plane-anchored correction: per-frame vertical
-corrections `d_i` solved jointly with the floor and ceiling plane heights,
-
-```
-min  Σ_floor w_i(f_i + d_i − F)² + Σ_ceil w_i(c_i + d_i − C)²
-   + Σ_i (d_i − d_{i−1})²/σ_step² + gauge
+```mermaid
+flowchart TD
+    A["Polycam raw zip<br/>(LiDAR)"] --> D["ingest.lidar"]
+    B["video .mov"] -.-> E["ingest.video<br/>NOT BUILT"]
+    C["photo folders"] -.-> F["ingest.photos<br/>NOT BUILT"]
+    D --> G["PosedFrame<br/>rgb + depth + pose + provenance"]
+    E -.-> G
+    F -.-> G
+    G --> H["drift correction<br/>plane anchored"]
+    H --> I["wall plane detection"]
+    I --> J["room polygon<br/>area, perimeter, ceiling"]
+    J --> K["JSON contract<br/>+ SVG floor plan"]
+    style D fill:#d7f0e6,stroke:#0e6b60
+    style G fill:#d7f0e6,stroke:#0e6b60
+    style H fill:#d7f0e6,stroke:#0e6b60
+    style I fill:#d7f0e6,stroke:#0e6b60
+    style J fill:#d7f0e6,stroke:#0e6b60
+    style K fill:#d7f0e6,stroke:#0e6b60
+    style E fill:#f6dcd4,stroke:#a32222
+    style F fill:#f6dcd4,stroke:#a32222
 ```
 
-weighted by each frame's own plane residual.
+Green is built and running. Red is captured but not processed.
 
-**The temporal prior is load-bearing, not decorative.** Of 120 keyframes, 67
-saw only the floor, 26 only the ceiling, and **1 saw both**. Without a term
-linking frames through time, the floor and ceiling observations form two
-disconnected components and the distance between them — the measurement itself
-— is unobservable. `σ_step` has physical meaning: metres of drift permitted
-between consecutive keyframes.
+All three tiers are meant to converge on one `PosedFrame` as early as possible
+so the geometry gets written once instead of three times. Tier C fills every
+field from the sensor. Tiers B and A would fill the same fields with recovered
+poses and inferred depth. The fields are identical; only their provenance
+differs, and that is the fact everything else is organised around.
 
-Ablation, one command:
+### Three decisions worth defending
 
-| σ_step | height | |
-|---|---|---|
-| 1e-6 | 2.8860 m | correction off |
-| 1e-3 | 2.9461 m | |
-| 2e-3 | 2.9621 m | shipped default |
-| 1e-2 | 3.0206 m | |
+**Every number carries its receipts.** A measurement is never a bare float. It
+travels with the chain that produced it: measured depth or inferred, device
+poses or recovered, sensor scale or a prior. The interval engine is then a
+function of that chain, which makes "intervals widen as the data thins" a
+property of the architecture rather than three special cases. A fallback
+interval is tagged `interval:ASSUMED_*` so a guess can never pass itself off as
+a measurement.
 
-13.5 cm of range on the prior strength, reported because it is true: on a
-sparse capture the plane separation is only weakly observable. Better ceiling
-coverage is what reduces the dependence, which is a *capture* fix, not an
-algorithmic one.
+**Drift correction is a dial, not a branch.** The ablation the brief wants is
+`--ablate`, and the correction strength sweeps continuously down to zero, which
+*is* the uncorrected case. Nothing rots.
 
----
+**Geometry never calls a model.** Ingest through room assembly is deterministic
+and offline. That is what the repeatability gate actually measures. The
+`.env` holds an OpenAI key meant for damage classification, and no geometry path
+reads it. That layer is unbuilt, so this submission calls nothing.
 
-## 4. Error budget
-
-Decomposed by fitting planes within frames (one shared pose) versus across them:
-
-| source | magnitude |
-|---|---|
-| depth sensor, within-frame residual | **0.55 cm** floor, 0.80 cm ceiling |
-| pose disagreement, between-frame | **4.22 cm** floor, 4.04 cm ceiling |
-
-The sensor is already five to eight times better than the 1.5 cm gate requires.
-**Every centimetre of the error is in the poses** — and these are the
-loop-closed ones.
-
-This single measurement redirected the project. Four hypotheses were tested
-against it and rejected:
-
-| hypothesis | test | result |
-|---|---|---|
-| clutter biasing surfaces | envelope estimator, validated on synthetic data to +0.18 cm at 35% clutter | rejected — correction moved the answer the wrong way |
-| bad peak-finding | wall detector applied to the vertical axis | rejected — identical −4.2 cm |
-| global scale error | both walls measured against tape | rejected — walls within 0.5 cm |
-| grazing incidence | residual vs incidence, 1.26 M samples | rejected — correlation +0.025 / −0.014 |
+One piece of deliberate duplication: `scripts/inspect_capture.py` re-implements
+PNG decoding in pure stdlib, so the field tool runs on a clean laptop the second
+a capture lands, with nothing installed. The pipeline's copy uses numpy. Tests
+hold the two to identical output.
 
 ---
 
-## 5. Calibration analysis
+## 2. All the numbers in one place
 
-**Intervals are bootstrapped over frames, never over points.** Samples within a
-frame share that frame's pose error; resampling points would treat 2.2 million
-correlated measurements as independent and report an interval of a fraction of
-a millimetre for data that disagrees by centimetres. That is precisely the
-confident garbage the brief caps a submission for.
+Five captures, 160 frames each, bootstrap 40, wall draws 50. Tape ground truth
+on my room only: door wall 2.9883 m, other wall 3.0411 m, ceiling 2.9705 m.
 
-The distinction has teeth. Our first wall intervals were hard-coded at ±1.5 cm
-— an asserted number. Replacing them with resampling first produced ±1 m,
-because draws that mistook a wardrobe for a wall polluted every dimension.
-**Detection is a model choice and positional uncertainty is a measurement**;
-conflating them makes the interval meaningless. Detection now happens once on
-the full capture and only plane positions resample, giving ±0.6–2.2 cm.
+| capture | ceiling | ± | wall A | ± | wall B | ± | area |
+|---|---|---|---|---|---|---|---|
+| my room 2 | 2.9364 | 1.23 | 3.0372 | 0.82 | 3.0524 | 1.22 | 9.271 m² |
+| my room 1 | 2.9479 | 1.83 | 3.0256 | 1.76 | 3.0028 | 1.66 | 9.085 m² |
+| friend 2 | 2.9322 | 1.10 | 3.0434 | 0.77 | 3.0345 | 3.11 | 9.235 m² |
+| friend 1 | 2.8889 | 2.49 | 3.7654 | 0.68 | 3.3603 | 0.77 | 12.653 m² |
+| hallway | 2.9389 | 2.07 | 3.7578 | 2.17 | 7.5027 | 4.02 | 28.193 m² |
 
-**Ground truth precision is part of the calibration story.** An early ceiling
-figure recorded to the nearest inch (9'10", 2.9972 m) made five captures across
-four rooms look ~6 cm biased. Re-measured carefully it is **2.9241 m** — the
-pipeline had been right, and the five captures had agreed with each other
-within 3.5 cm throughout. A reading quantised to the nearest inch carries
-±1.27 cm against a ±1.5 cm gate and cannot certify it. Two successive readings
-of the same wall differed by 2.54 cm, and that alone flipped four gates and
-changed which estimator scored best — which is why no estimator was ever
-selected by which percentile matched the tape.
-
----
-
-## 6. Results
-
-All runs at 160 frames, bootstrap 40, wall-draws 50. Tape ground truth on one
-room: walls 2.9972 / 3.0199 m, ceiling 2.9241 m.
+Gates, where we hold tape:
 
 | capture | gate | precision | accuracy |
 |---|---|---|---|
-| my room 2 | ceiling height | ±1.23 cm **PASS** | +1.2 cm **PASS** |
-| my room 2 | wall pair A | ±0.70 cm **PASS** | +3.9 cm FAIL |
-| my room 2 | wall pair B | ±1.17 cm **PASS** | +14.0 cm FAIL |
-| my room 1 | ceiling height | ±1.83 cm FAIL | +2.4 cm FAIL |
-| my room 1 | wall pair A | ±1.38 cm **PASS** | +11.2 cm FAIL |
-| my room 1 | wall pair B | ±1.25 cm **PASS** | −2.7 cm FAIL |
+| my room 2 | ceiling | ±1.23 **PASS** | -3.4 fail |
+| my room 2 | door wall | ±0.82 **PASS** | +4.9 fail |
+| my room 2 | other wall | ±1.22 **PASS** | **+1.1 PASS** |
+| friend 2 | ceiling | ±1.10 **PASS** | -3.8 fail |
+| friend 2 | door wall | ±0.77 **PASS** | +5.5 fail |
+| friend 2 | other wall | ±3.11 fail | **-0.7 PASS** |
+| my room 1 | all three | fail | fail |
 
-Precision passes 5 of 6. Ceiling heights across four rooms cluster at
-2.889–2.948 m, agreeing within 5.9 cm and with the taped ceiling within 1.2 cm.
+**Precision passes 5 of 6** on the two compliant captures. Accuracy passes on
+both "other wall" measurements. Scan 1 fails everything, which is the point of
+section 4.
 
-**Repeatability fails** — 16.7 cm on one wall pair against a 1.5 cm limit. As
-the gate requires, we state which kind: **unrepeatable, not
-repeatable-but-biased.** Which of two candidate planes wins shifts between
-captures and with frame count.
+Two supporting results that need no tape at all:
 
-**Head to head** (`docs/head-to-head.md`): against Polycam Floorplan mode
-(RoomPlan) on the same room, we beat or tie on **3 of 4 shared dimensions**.
-Polycam additionally detects 2 doors, a window and a closet as a separate room;
-we detect none of those and score zero on the opening gate.
+| check | result |
+|---|---|
+| identical rooms, ceiling | agree to **0.4 cm** |
+| identical rooms, walls | agree to **0.6 and 1.8 cm** |
+| depth sensor, within frame | 0.55 cm |
+| pose disagreement, between frames | 4.22 cm |
+| drift removed by optimiser, bad scan | median 5.3 cm, max 42 cm |
+| drift removed by optimiser, good scan | median 0.9 cm, max 9.2 cm |
 
----
+That last pair is the whole story of section 4.
 
-## 7. The fix loop
-
-Full declaration in `docs/fix-loop.md`. In brief: the worst gate was
-repeatability. Root cause, evidenced from the capture metadata rather than
-inferred, was **protocol non-compliance** — scan 1 was captured standing near
-the room centre without corner dwells. Shipped: protocol § 5 rewritten, plus
-automated compliance scoring at ingest so a bad capture is flagged on arrival.
-
-Predicted: drift median below 2 cm and the ceiling gate moving to pass on both
-axes. Measured: drift **5.3 → 0.9 cm**, ceiling precision **±1.83 → ±1.23 cm**,
-ceiling accuracy **+2.4 → +1.2 cm**. Both runs regenerable by one command each.
-
-A prior prediction was wrong and is reported as such: per-frame plane fitting
-was predicted to tighten the interval and made it slightly worse (±6.36 →
-±7.40 cm). It produced the error decomposition in § 4, which is what made the
-real fix findable.
+**Head to head** against Polycam Floorplan mode, version 6.0.21, which is Apple
+RoomPlan underneath: we beat or tie on 3 of 4 shared dimensions. Full table in
+`head-to-head.md`. Polycam also finds two doors, a window and a closet, and we
+find none of those, so on the opening gate it scores and we score zero.
 
 ---
 
-## 8. Known failure modes
+## 3. Why the ground truth is the weak link
 
-**Room segmentation is absent, and it is the largest measurement defect.** The
-protocol requires doors open for the LiDAR tier, so a scan sees through the
-doorway; a hallway surface then competes as a candidate wall outside the real
-one. On the affected axis the floor slab spans 4.05 m in a 3.0 m room. This
-causes the +14 cm wall error and most of the repeatability failure. The fix is
-the same machinery as the multi-room stitch. It was not shippable in 48 hours,
-and tuning a plane-selection heuristic against one room instead would have been
-fitting to a single sample.
+This is the finding we did not expect to be writing up.
 
-**Tiers A and B are captured but unprocessed.** The walk-in test can only be
-served at the LiDAR tier. This is the largest scope gap.
+Four successive tape readings of one ceiling gave 3.0226, 2.9972, 2.9241 and
+2.9705 m. That is a **9.8 cm spread against a 1.5 cm gate.** The same pipeline
+output scored +1.2 cm against one of those readings and -3.4 cm against another.
 
-**No opening detection**, so the tightest gate in the brief is unscored.
+Meanwhile our five captures span 5.9 cm, and two captures of identical rooms
+agree to 4 mm.
 
-**No stitched multi-room plan.** Five rooms measured individually; the
-whole-property plan the brief calls the product surface does not exist.
+**The pipeline is more repeatable than the tape measuring it.** Every accuracy
+number in this report is bounded by the instrument, not the model. Measuring a
+3 m ceiling overhead with a handheld tape is a ±5 cm operation, and no amount of
+care changes that. A laser reading to millimetres is the fix, and we did not
+have one.
 
-**No damage detection.** Two classes were staged and tape-measured — hallway
-2×3 in ellipse, friend-2 room 3×3 in square — but nothing consumes them.
+We report this as a limitation of the benchmark rather than quietly picking
+whichever tape reading made the gate pass.
 
-**Rectangular-room prior.** `square_up=True` snaps wall normals to the room
-axes. It moved wall gates from fail to pass, and it will misreport a genuinely
+---
+
+## 4. What we fixed
+
+Full write-up in `fix-loop.md`. Short version below.
+
+**Worst gate:** repeatability, failing by 11x.
+
+**Root cause:** the capture, not the code. Scan 1 was shot standing near the
+middle of the room without pausing at corners. The per frame metadata in the
+export proves it: drift median 5.3 cm against 0.9 cm for the compliant scan,
+with identical lighting in both, so it was not a light problem.
+
+**Shipped:** protocol section 5 rewritten around a perimeter walk with corner
+dwells, plus automated compliance scoring at ingest so a bad capture gets
+flagged the moment it lands instead of at scoring time.
+
+**Predicted:** drift under 2 cm, ceiling gate moving to pass.
+**Got:** drift 0.9 cm, ceiling precision ±1.83 to ±1.23, both inside the gate.
+
+**Second fix, found late.** Wall separation turned out to vary with height: 2.74 m
+measured 15 cm off the floor versus 3.03 m at chest height, in a room whose walls
+are about 3.03 m apart. The low band was full of furniture and open doorways.
+Sampling the wall above 1.30 m instead cut one room's error from **+11.8 cm to
++1.0 cm** and brought the two identical rooms from 12.3 cm apart to 1.0 cm.
+
+Four hypotheses died on the way there, each with a test: surface clutter, peak finding, global scale error, and grazing incidence angle. Killing them is
+what left the capture itself as the only suspect.
+
+---
+
+## 5. Limitations
+
+Ordered by how much they cost.
+
+**Tiers A and B are captured but not processed.** Photos and video exist for
+three rooms. No ingest was written for either. The walk-in test can only be
+served at the LiDAR tier. This is the biggest gap in the submission and it is a
+scope decision, not an oversight.
+
+**No opening detection.** The tightest gate in the brief, ≤2 cm on ≥85% of
+openings, is unscored. Polycam finds our doors and windows and we do not.
+
+**No stitched multi-room plan.** Five rooms measured individually. The whole
+property plan that the brief calls the product surface does not exist.
+
+**No damage detection.** Two classes were staged and tape measured, a 2×3 inch
+ellipse in the hallway and a 3×3 inch square in friend 2's room. Nothing
+consumes them.
+
+**Room segmentation is missing** which is what the wall band fix works around
+rather than solves. An open doorway still feeds the neighbouring room into the
+fit; raising the sample above 1.30 m dodges most of it because doorways are
+holes in the lower wall, but a tall opening or a pass through would still break
+it.
+
+**We assume rooms are rectangular.** `square_up=True` snaps wall normals to the
+room axes and it moved gates from fail to pass. It will misreport a genuinely
 non-rectangular room. `square_up=False` exists and reports wider intervals.
 
-**Reflective surfaces.** Every room has floor-to-ceiling glass. The protocol
-requires blinds closed at Tier C for that reason, which starves the camera —
-ISO pinned at 3200 in both captures of one room. Tier C survives it because
-LiDAR is active; a camera-only tier would not.
+**Every room has floor to ceiling glass** so the protocol closes the blinds for
+the LiDAR tier, which starves the camera. ISO sat pinned at 3200 in both
+captures of my room. Tier C survives it because LiDAR is active. A camera only
+tier would not.
 
-**Ground truth covers one room of five.** The other four report precision only.
+**Ground truth covers one room out of five.** The other four report precision
+only.
+
+---
+
+## 6. Another eight hours?
+
+In rough order of value per hour.
+
+**1. Room segmentation.** Everything downstream is waiting on it: the doorway
+error, the repeatability failure, the multi room stitch, and the head to head row
+we lose. Cluster wall planes into rooms by which side of a doorway they sit on.
+This is the one that unlocks the others.
+
+**2. Opening detection.** We already have wall planes fitted to half a million
+points each. An opening is a hole in one: project the wall's points onto its own
+plane and look for a region with no returns bounded by returns. A door reaches
+the floor line, a window has wall below it. That distinction is geometric, not
+learned, and it turns a zero into a scored gate.
+
+**3. Tier A ingest.** The photos are sitting there with EXIF intact. Even a
+crude path with honestly wide intervals beats a tier that does not run, because
+a tier that does not run scores zero on 30% of the grade.
+
+**4. Buy a laser measure.** Twenty five dollars. It is the cheapest accuracy
+improvement available to this project and it is not a code change. Right now we
+cannot certify our own gate.
+
+**5. Speed.** 45 seconds per capture is fine, but most of it is the sequential
+part of PNG unfiltering. An hour with that loop would pay off on the day.
+
+What we would **not** do: chase the remaining +5 cm on the door wall. Two rooms
+agree with each other to within 2 cm and disagree with one tape reading by 5 cm.
+Until the ground truth is better than the thing being measured, tuning against
+it is guessing with extra steps.

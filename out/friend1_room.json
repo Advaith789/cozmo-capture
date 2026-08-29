@@ -1,6 +1,6 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-29T15:52:10+00:00",
+  "generated": "2026-08-29T17:28:40+00:00",
   "capture": {
     "source": "8_29_2026 - Friend - 1 Room.zip",
     "tier": "C",
@@ -14,27 +14,27 @@
       "name": "friend1_room",
       "footprint": [
         [
-          2.1127,
-          -3.7139
+          2.0822,
+          -3.7018
         ],
         [
-          2.8149,
-          -0.0157
+          2.7684,
+          0.0005
         ],
         [
-          -0.5268,
-          0.6188
+          -0.5357,
+          0.6129
         ],
         [
-          -1.2289,
-          -3.0795
+          -1.2219,
+          -3.0895
         ]
       ],
       "floor_area": {
-        "value": 12.8037,
-        "ci_low": 12.7767,
-        "ci_high": 12.8585,
-        "ci_half_width": 0.0409,
+        "value": 12.6531,
+        "ci_low": 12.7468,
+        "ci_high": 12.8082,
+        "ci_half_width": 0.0307,
         "unit": "m2",
         "provenance": [
           "depth:measured",
@@ -46,10 +46,10 @@
         "samples": 50
       },
       "perimeter": {
-        "value": 14.3313,
-        "ci_low": 14.318,
-        "ci_high": 14.3636,
-        "ci_half_width": 0.0228,
+        "value": 14.2515,
+        "ci_low": 14.3027,
+        "ci_high": 14.3371,
+        "ci_half_width": 0.0172,
         "unit": "m",
         "provenance": [
           "depth:measured",
@@ -78,10 +78,10 @@
       },
       "wall_lengths": [
         {
-          "value": 3.7643,
-          "ci_low": 3.7663,
+          "value": 3.7654,
+          "ci_low": 3.7673,
           "ci_high": 3.7808,
-          "ci_half_width": 0.0072,
+          "ci_half_width": 0.0068,
           "unit": "m",
           "provenance": [
             "depth:measured",
@@ -93,10 +93,10 @@
           "samples": 50
         },
         {
-          "value": 3.4013,
-          "ci_low": 3.3884,
-          "ci_high": 3.4052,
-          "ci_half_width": 0.0084,
+          "value": 3.3603,
+          "ci_low": 3.3775,
+          "ci_high": 3.3929,
+          "ci_half_width": 0.0077,
           "unit": "m",
           "provenance": [
             "depth:measured",
@@ -108,10 +108,10 @@
           "samples": 50
         },
         {
-          "value": 3.7643,
-          "ci_low": 3.7663,
+          "value": 3.7654,
+          "ci_low": 3.7673,
           "ci_high": 3.7808,
-          "ci_half_width": 0.0072,
+          "ci_half_width": 0.0068,
           "unit": "m",
           "provenance": [
             "depth:measured",
@@ -123,10 +123,10 @@
           "samples": 50
         },
         {
-          "value": 3.4013,
-          "ci_low": 3.3884,
-          "ci_high": 3.4052,
-          "ci_half_width": 0.0084,
+          "value": 3.3603,
+          "ci_low": 3.3775,
+          "ci_high": 3.3929,
+          "ci_half_width": 0.0077,
           "unit": "m",
           "provenance": [
             "depth:measured",
@@ -141,48 +141,48 @@
       "walls": [
         {
           "normal": [
-            0.18034,
-            0.9836
+            0.1782,
+            0.98399
           ],
-          "offset_m": -3.2547,
-          "points": 393751,
-          "planarity_cm": 2.49
+          "offset_m": -3.2604,
+          "points": 316722,
+          "planarity_cm": 2.6
         },
         {
           "normal": [
-            0.18905,
-            0.98197
+            0.18624,
+            0.9825
           ],
-          "offset_m": 0.5097,
-          "points": 416100,
-          "planarity_cm": 2.43
+          "offset_m": 0.505,
+          "points": 304225,
+          "planarity_cm": 2.51
         },
         {
           "normal": [
-            -0.97889,
-            0.20438
+            -0.98103,
+            0.19386
           ],
-          "offset_m": -2.7684,
-          "points": 555065,
-          "planarity_cm": 2.62
+          "offset_m": -2.7219,
+          "points": 422123,
+          "planarity_cm": 3.16
         },
         {
           "normal": [
-            -0.98257,
-            0.18587
+            -0.98265,
+            0.18545
           ],
-          "offset_m": -0.4639,
-          "points": 528061,
-          "planarity_cm": 1.5
+          "offset_m": -0.4646,
+          "points": 375919,
+          "planarity_cm": 1.57
         },
         {
           "normal": [
-            -0.98258,
-            0.18586
+            -0.98254,
+            0.18605
           ],
-          "offset_m": 0.633,
-          "points": 879071,
-          "planarity_cm": 2.52
+          "offset_m": 0.6384,
+          "points": 641059,
+          "planarity_cm": 2.8
         }
       ],
       "openings": []
@@ -207,25 +207,25 @@
     {
       "gate": "wall_length_0",
       "limit_m": 0.015,
-      "interval_half_width_m": 0.0072,
+      "interval_half_width_m": 0.0068,
       "precision_pass": true
     },
     {
       "gate": "wall_length_1",
       "limit_m": 0.015,
-      "interval_half_width_m": 0.0084,
+      "interval_half_width_m": 0.0077,
       "precision_pass": true
     },
     {
       "gate": "wall_length_2",
       "limit_m": 0.015,
-      "interval_half_width_m": 0.0072,
+      "interval_half_width_m": 0.0068,
       "precision_pass": true
     },
     {
       "gate": "wall_length_3",
       "limit_m": 0.015,
-      "interval_half_width_m": 0.0084,
+      "interval_half_width_m": 0.0077,
       "precision_pass": true
     }
   ],
