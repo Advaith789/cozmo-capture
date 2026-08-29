@@ -1,6 +1,6 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-29T22:19:29+00:00",
+  "generated": "2026-08-29T22:35:06+00:00",
   "capture": {
     "source": "8_29_2026 - My room 2.zip",
     "tier": "C",
@@ -255,9 +255,9 @@
       "limit_m": 0.015,
       "interval_half_width_m": 0.0082,
       "precision_pass": true,
-      "ground_truth_m": 2.9883,
-      "error_m": 0.0489,
-      "accuracy_pass": false
+      "ground_truth_m": 3.0344,
+      "error_m": 0.0028,
+      "accuracy_pass": true
     },
     {
       "gate": "wall_length_1",
@@ -273,9 +273,9 @@
       "limit_m": 0.015,
       "interval_half_width_m": 0.0082,
       "precision_pass": true,
-      "ground_truth_m": 2.9883,
-      "error_m": 0.0489,
-      "accuracy_pass": false
+      "ground_truth_m": 3.0344,
+      "error_m": 0.0028,
+      "accuracy_pass": true
     },
     {
       "gate": "wall_length_3",

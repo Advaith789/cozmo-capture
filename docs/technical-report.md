@@ -104,22 +104,24 @@ Gates, on the three captures where we hold tape:
 | capture | gate | precision | accuracy |
 |---|---|---|---|
 | my room 2 | ceiling | ±0.76 **PASS** | **-0.2 PASS** |
-| my room 2 | door wall | ±0.82 **PASS** | +4.9 fail |
+| my room 2 | door wall | ±0.82 **PASS** | **+0.3 PASS** |
 | my room 2 | other wall | ±1.22 **PASS** | **+1.1 PASS** |
 | friend 2 | ceiling | ±0.50 **PASS** | **-0.7 PASS** |
-| friend 2 | door wall | ±0.77 **PASS** | +5.5 fail |
+| friend 2 | door wall | ±0.77 **PASS** | **+0.9 PASS** |
 | friend 2 | other wall | ±3.11 fail | **-0.7 PASS** |
 | my room 1 | ceiling | ±0.70 **PASS** | +5.7 fail |
-| my room 1 | door wall | ±1.76 fail | +3.7 fail |
+| my room 1 | door wall | ±1.76 fail | **-0.9 PASS** |
 | my room 1 | other wall | ±1.66 fail | -3.8 fail |
 
-**Ceiling precision passes in all five captures**, ±0.50 to ±1.09 cm. Overall
-precision passes 10 of 15 scored gates; accuracy passes 4 of 9.
+**Accuracy 7 of 9, precision 6 of 9.** The capture that followed the protocol
+passes every gate on both axes.
 
-Everything that fails accuracy is the door wall, or scan 1. The door wall reads
-+3.7 to +5.5 cm long in every capture, and the two identical rooms agree with
-each other to within 2 cm while both disagreeing with that one tape figure by
-about 5 cm. We do not treat it as settled which side is wrong.
+The door wall spent most of this project reading 5 cm long, and it was the tape.
+Four independent measurements across two identically built rooms clustered at
+303.4 to 305.2 cm against a single reading of 298.8. A five-reading re-measure
+came back at 303.44, and our figures sit 0.75 cm from it. The pipeline's own
+cross-room consistency identified a ground truth error before the tape did,
+which is the result this project is proudest of.
 
 Two supporting results that need no tape at all:
 

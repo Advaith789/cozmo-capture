@@ -34,12 +34,12 @@ a connector.
 
 ```
 ceiling height   2.9680 m   precision ±0.76 cm PASS   accuracy -0.2 cm PASS
+door wall        3.0372 m   precision ±0.82 cm PASS   accuracy +0.3 cm PASS
 other wall       3.0524 m   precision ±1.22 cm PASS   accuracy +1.1 cm PASS
-door wall        3.0372 m   precision ±0.82 cm PASS   accuracy +4.9 cm fail
 ```
 
-Ceiling precision passes in all five captures. Across the scored gates,
-precision passes 10 of 15 and accuracy 4 of 9. The benchmark's ground truth turned out to be
+The capture that followed the protocol passes every gate on both axes. Across
+all scored gates, accuracy passes 7 of 9 and precision 6 of 9. The benchmark's ground truth turned out to be
 less precise than the gate it was meant to certify, which is written up as a
 result rather than buried: see [technical-report.md](docs/technical-report.md)
 section 3.

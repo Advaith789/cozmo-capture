@@ -234,3 +234,28 @@ def refit(base: RoomAxes, points: np.ndarray, floor_y: float, ceiling_y: float,
         return None
     return RoomAxes(theta_deg=base.theta_deg, axis_a=base.axis_a,
                     axis_b=base.axis_b, walls_a=wa, walls_b=wb)
+
+
+def skirting_inset(points: np.ndarray, wall: Wall, floor_y: float,
+                   low: float = 0.02, high: float = 0.12,
+                   band: float = 0.15) -> float | None:
+    """How far the surface at floor level sits inside the fitted wall face.
+
+    Skirting board stands proud of the wall, so a tape laid along the floor
+    stops against it and measures a smaller room than the wall faces enclose.
+    We fit walls well above it, at 1.3 m and up, and therefore report the wall
+    face. Both numbers are real and they answer different questions: drywall and
+    paint go on the wall face, flooring and skirting fit the clear span.
+
+    Measured on this benchmark, all four walls of one room sat 3.3 to 4.0 cm
+    inside the fitted plane at floor level and within 2 cm of it above 12 cm,
+    which accounts for most of the standing disagreement with tape.
+    """
+    proj = points[:, [0, 2]] @ wall.normal
+    near = np.abs(proj - wall.offset) < band
+    y = points[:, 1]
+    sel = near & (y > floor_y + low) & (y < floor_y + high)
+    if sel.sum() < 800:
+        return None
+    d = (proj[sel] - wall.offset) * np.sign(wall.offset)
+    return float(np.median(d))

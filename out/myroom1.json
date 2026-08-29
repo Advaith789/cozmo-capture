@@ -1,6 +1,6 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-29T17:44:32+00:00",
+  "generated": "2026-08-29T22:35:52+00:00",
   "capture": {
     "source": "8_28_2026 - My room 1.zip",
     "tier": "C",
@@ -175,7 +175,26 @@
           "planarity_cm": 3.13
         }
       ],
-      "openings": []
+      "openings_status": "experimental, not claimed against the opening gate: widths vary by a factor of two across frame counts",
+      "openings": [
+        {
+          "wall_index": 3,
+          "kind": "window",
+          "width_m": 0.56,
+          "height_m": 1.0,
+          "sill_m": 0.96,
+          "width_ci": [
+            0.56,
+            0.626
+          ],
+          "border_confidence": 1.0,
+          "provenance": [
+            "depth:measured",
+            "method:wall_plane_hole",
+            "status:EXPERIMENTAL"
+          ]
+        }
+      ]
     }
   ],
   "stitched_plan": {
@@ -202,9 +221,9 @@
       "limit_m": 0.015,
       "interval_half_width_m": 0.0176,
       "precision_pass": false,
-      "ground_truth_m": 2.9883,
-      "error_m": 0.0373,
-      "accuracy_pass": false
+      "ground_truth_m": 3.0344,
+      "error_m": -0.0088,
+      "accuracy_pass": true
     },
     {
       "gate": "wall_length_1",
@@ -220,9 +239,9 @@
       "limit_m": 0.015,
       "interval_half_width_m": 0.0176,
       "precision_pass": false,
-      "ground_truth_m": 2.9883,
-      "error_m": 0.0373,
-      "accuracy_pass": false
+      "ground_truth_m": 3.0344,
+      "error_m": -0.0088,
+      "accuracy_pass": true
     },
     {
       "gate": "wall_length_3",
@@ -235,7 +254,7 @@
     }
   ],
   "known_limitations": [
-    "Openings not yet detected; the opening-width gate is unscored.",
+    "Opening detection is EXPERIMENTAL and is not claimed against the opening-width gate: widths vary by up to a factor of two across frame counts, against a 2 cm gate.",
     "Damage regions not implemented.",
     "Single-room capture: no stitched multi-room plan or adjacency.",
     "Tiers A and B ingest not implemented."

@@ -29,16 +29,20 @@ carrying the door labelled so the pairing is not inferred:
 
 | | value |
 |---|---|
-| door wall | **2.9883 m** (9' 9.65") |
-| other wall | **3.0411 m** |
-| ceiling | **2.9705 m** (9' 8.95") |
+| door wall | **3.0344 m**, mean of five readings: 303.8, 304.2, 300.1, 306.7, 302.4 cm |
+| other wall | 3.0411 m |
+| ceiling | 2.9705 m (9' 8.95") |
 
-**The ground truth is less precise than the gate, and this is a headline result
-rather than a footnote.** Four successive tape readings of the same ceiling
-gave 3.0226, 2.9972, 2.9241 and 2.9705 m, a **9.8 cm spread against a 1.5 cm
-gate**. Our five captures span 5.9 cm with a standard deviation of 2.31 cm. The
-pipeline is more repeatable than the instrument measuring it, so accuracy
-figures below are bounded by the tape, not by the pipeline.
+The door wall figure replaces an earlier single reading of 2.9883 m, which was
+4.6 cm out. **The pipeline found that error before the tape did:** four
+independent wall measurements across two identically built rooms clustered at
+303.4 to 305.2 cm while that one reading said 298.8, and a careful five-reading
+re-measure landed at 303.44. Our measurements sit 0.75 cm from it.
+
+**The ground truth is still less precise than the gate it certifies.** Those
+five readings span 6.6 cm with a standard error of 1.09 cm, against a 1.5 cm
+gate, and four successive readings of the ceiling spanned 9.8 cm. Accuracy
+figures below are therefore consistent with tape rather than certified by it.
 
 ## Per-room results
 
@@ -63,24 +67,20 @@ Only my room carries tape measurements.
 
 | capture | gate | precision | | accuracy | |
 |---|---|---|---|---|---|
-| my room 2 | ceiling height | ±1.23 cm | **PASS** | -3.4 cm | fail |
-| my room 2 | door wall | ±0.82 cm | **PASS** | +4.9 cm | fail |
+| my room 2 | ceiling height | ±0.76 cm | **PASS** | **-0.2 cm** | **PASS** |
+| my room 2 | door wall | ±0.82 cm | **PASS** | **+0.3 cm** | **PASS** |
 | my room 2 | other wall | ±1.22 cm | **PASS** | **+1.1 cm** | **PASS** |
-| friend 2 | ceiling height | ±1.10 cm | **PASS** | -3.8 cm | fail |
-| friend 2 | door wall | ±0.77 cm | **PASS** | +5.5 cm | fail |
+| friend 2 | ceiling height | ±0.50 cm | **PASS** | **-0.7 cm** | **PASS** |
+| friend 2 | door wall | ±0.77 cm | **PASS** | **+0.9 cm** | **PASS** |
 | friend 2 | other wall | ±3.11 cm | fail | **-0.7 cm** | **PASS** |
-| my room 1 | ceiling height | ±1.83 cm | fail | -2.3 cm | fail |
-| my room 1 | door wall | ±1.76 cm | fail | +3.7 cm | fail |
+| my room 1 | ceiling height | ±0.70 cm | **PASS** | +5.7 cm | fail |
+| my room 1 | door wall | ±1.76 cm | fail | **-0.9 cm** | **PASS** |
 | my room 1 | other wall | ±1.66 cm | fail | -3.8 cm | fail |
 
-**Precision passes 5 of 6 on the two compliant captures.** Accuracy passes on
-both "other wall" measurements, one in each room. Scan 1, the non-compliant
-capture, fails everything, which is the subject of the fix loop.
-
-The door wall reads +3.7 to +5.5 cm long in every capture, consistently. Two
-independent rooms agree with each other to within 2 cm while both disagreeing
-with that one tape figure by about 5 cm, so we do not treat it as settled: it
-may be our error or it may be what that reading measured.
+**Accuracy passes 7 of 9, precision 6 of 9.** My room 2, the capture that
+followed the protocol, passes every gate on both axes. Every remaining failure
+belongs to scan 1, the deliberately non-compliant capture, except one precision
+miss on friend 2.
 
 Applying the same tape to friend 2's room, which is the same unit type and the
 same floorplan, gives a materially better picture on walls:
