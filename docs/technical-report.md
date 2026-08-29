@@ -324,13 +324,22 @@ The gold-standard tool fails on this footage, which moves the diagnosis from
 video more densely to fix it pushed COLMAP past two minutes per room, which is
 too slow for a timed walk-in test regardless.
 
-**What would fix it is a protocol change, not more code.** The photo tier's six
-to eight stills from three standing positions give wide baselines and large
-viewpoint changes between consecutive shots, which is close to the worst case
-for feature matching. Reconstruction needs a continuous orbit in small steps,
-many more frames, and better light than a room shot at ISO 3200. That is a
-different capture instruction from the one we wrote, and we would test it
-against COLMAP registration rate before trusting it.
+**The deeper point is that classical reconstruction is the wrong tool for the
+tier as specified.** The brief allows two to eight stills per room. Joining
+photographs needs twenty or thirty with heavy overlap; with eight there is
+simply not enough shared information, and no implementation recovers it. That is
+almost certainly why the brief sets the photo gate at ±8% while the LiDAR gate
+is ±1.5 cm: it does not expect reconstruction, it expects a rougher method that
+works from very few views.
+
+The right approach for two to eight photos is therefore per-image metric depth,
+predicting absolute distance for each photograph and assembling those, rather
+than triangulating between them. The depth model for it is already built and
+working; the assembly is what we ran out of time for. Section 3 of the capture
+protocol has been rewritten around that method: it now asks for corner shots
+with both junction lines in frame and the phone held level, because with a
+per-image method coverage within each frame matters and overlap between frames
+does not.
 
 The original description follows.
 

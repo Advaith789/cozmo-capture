@@ -43,19 +43,31 @@ judgement is a capture we did not specify.
 | **B · Video** | Any iPhone 15 or newer | Native Camera | § 4 |
 | **C · LiDAR** | iPhone 15 Pro or newer | Polycam | § 5 |
 
-## 3. Tier A, Photos, ~1 min per room
+## 3. Tier A, Photos, ~2 minutes per room
+
+**Read this first.** Eight photographs cannot be joined into a 3D
+reconstruction, whoever writes the software. We proved it: COLMAP, the standard
+reconstruction tool, registered **4 of our 29 photos** and threw the rest away.
+Joining photos needs consecutive shots overlapping by 70% or more with only a
+small step between them, which takes twenty or thirty images of one room. The
+brief allows two to eight.
+
+So the photo tier does not join your photos. It reads each one on its own. That
+changes what makes a good photo completely: **coverage per shot matters, overlap
+between shots does not.** Each frame has to contain enough of the room to be
+measured by itself.
 
 1. Open the **native Camera** app in Photo mode. No flash, no zoom, no portrait mode.
-   - *Flash changes the lighting between shots, which stops the pipeline matching them to each other.*
-2. Take **6 to 8** photos per room from **at least 3 different standing positions** do not stand in one spot and turn.
-   - *Turning on the spot gives every photo the same viewpoint, and the pipeline recovers no shape from it. Stepping sideways between shots is what makes the room measurable.*
-3. Stand in a corner and shoot the opposite corner. Repeat from two more corners. Each photo should overlap the last by roughly **two thirds**.
-4. Include in at least one photo per room: the **full height** of one wall, floor line to ceiling line.
-5. **Connector shots.** Stand in each doorway and take one photo into each of the two rooms it joins.
-   - *This is the only evidence the pipeline has that two rooms touch. Skip it and the rooms cannot be assembled into a property.*
-6. **Optional, strongly recommended.** Lay a sheet of A4 or US Letter paper flat on the floor, in view of at least 2 photos per room.
-   - *Photos carry no sense of size. A page of known dimensions is what turns the reconstruction into inches. Without it the pipeline still runs, and reports a wider margin of error.*
-7. Put each room's photos in a folder named in lower case with underscores: `kitchen`, `living_room`, `bedroom_1`, `hallway`.
+2. **Hold the phone level**, upright, both hands, and do not tilt it up or down.
+   - *Each photo is measured on its own, and a level camera is what tells us which way is down. A tilted shot loses the reference and the room comes out skewed.*
+3. Take **6 to 8 photos per room**, one from each corner, each aimed at the **opposite corner**.
+   - *A corner shot sees two walls, the floor and the ceiling in one frame. That is a whole room's geometry in a single photo, which is exactly what a per-photo method needs.*
+4. In every photo, keep **both junction lines in frame**: where the wall meets the floor, and where it meets the ceiling.
+   - *These two lines carry the room's height and the wall's run. A photo missing either cannot be measured, however sharp it is.*
+5. Stand **back against the wall** so the opposite corner is as far away as possible, and step back until the whole corner fits.
+6. **Connector shots.** Stand in each doorway and take one photo into each of the two rooms it joins.
+7. **If you can take more than eight**, take twenty to thirty in a slow continuous circle, one small step between shots, each overlapping the last by about two thirds. That is enough to join them properly and it measures far better. Our own captures did not do this, which is why the tier is unscored in this submission.
+8. Put each room's photos in a folder named in lower case with underscores: `kitchen`, `living_room`, `bedroom_1`, `hallway`.
 
 ## 4. Tier B, Video walkthrough, under 10 min per floor
 
@@ -182,10 +194,18 @@ python3 scripts/inspect_capture.py <exported>.zip
 Every instruction above answers to a scored gate. These are the ones most
 likely to be challenged at the defense.
 
-**Three standing positions, not one.** Photographs taken by turning on the spot
-share a single viewpoint and yield no parallax, so no geometry can be recovered
-from them however many you take. Stepping between shots is the difference
-between a photo set that measures and one that does not.
+**Corner shots, and level.** Our first version of this page asked for three
+standing positions with two thirds overlap, on the reasoning that stepping
+between shots gives the parallax a reconstruction needs. The reasoning is sound
+and the instruction was still wrong, because the brief allows only two to eight
+photographs per room and reconstruction needs twenty or thirty. COLMAP, the
+standard tool, registered 4 of our 29 photos and discarded the rest.
+
+With eight photos there is nothing to join, so each is measured on its own, and
+that inverts what makes a good one. Overlap stops mattering. What matters is
+that a single frame contains a whole corner with both junction lines, and that
+the phone is level so the frame knows which way is down. The page now asks for
+that, and says what to do differently if more than eight photos are allowed.
 
 **Loop-backs required, not forbidden.** Returning over known ground is what
 supplies the constraint that cancels accumulated drift. A protocol that forbids
