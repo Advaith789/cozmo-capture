@@ -15,6 +15,7 @@ Stdlib only, so it runs on a clean machine with no install step.
 from __future__ import annotations
 
 import json
+import math
 import statistics
 import struct
 import sys
@@ -46,10 +47,14 @@ class Source:
         self._zip = zipfile.ZipFile(path) if zipfile.is_zipfile(path) else None
         if self._zip:
             names = [n for n in self._zip.namelist() if not n.endswith("/")]
-            # Exports usually nest everything under one folder; drop that prefix
-            # so paths read the same as they do on disk.
+            # Some exports nest everything under one capture folder; drop that
+            # prefix so paths read the same either way. Only strip when the
+            # folder really does wrap the whole archive — an export with files
+            # at the top level has no wrapper, and stripping its first
+            # directory would silently rename keyframes/ out of existence.
             roots = {n.split("/", 1)[0] for n in names if "/" in n}
-            self._strip = f"{roots.pop()}/" if len(roots) == 1 else ""
+            has_top_level = any("/" not in n for n in names)
+            self._strip = f"{roots.pop()}/" if len(roots) == 1 and not has_top_level else ""
             self._names = names
         else:
             self._strip = ""
@@ -331,13 +336,113 @@ def report_polycam(src: Source, groups: dict[str, list[str]]) -> None:
         vals = png_gray_values(src.read(conf[0]))
         if vals:
             hist = Counter(vals)
-            names = {0: "low", 127: "medium", 255: "high"}
-            for level in sorted(hist):
+            # ARKit gives three confidence levels, but the byte values Polycam
+            # writes are not the documented 0/127/255 — observed 0/54/255. Label
+            # by rank rather than by value so the report survives the next change.
+            levels = sorted(hist)
+            rank = {}
+            if len(levels) == 3:
+                rank = dict(zip(levels, ("low", "medium", "high")))
+            elif len(levels) == 2:
+                rank = dict(zip(levels, ("low", "high")))
+            for level in levels:
                 pct = 100 * hist[level] / len(vals)
-                print(f"    {level:>3} ({names.get(level, '?'):<6}) {pct:5.1f}%")
-            low = 100 * hist.get(0, 0) / len(vals)
+                print(f"    {level:>3} ({rank.get(level, '?'):<6}) {pct:5.1f}%")
+            if len(levels) > 3:
+                print(f"    [!] {len(levels)} distinct levels — not the 3-level map we assume")
+            low = 100 * hist.get(levels[0], 0) / len(vals) if levels else 0
             if low > 30:
-                print(f"    [!] {low:.0f}% low-confidence — glass, gloss, or too far out")
+                print(f"    [!] {low:.0f}% lowest-confidence — glass, gloss, or too far out")
+
+    report_session(src, cams, corrected)
+
+
+def report_session(src: Source, cams: list[str], corrected: list[str]) -> None:
+    """Per-frame metadata and the size of the correction that was applied.
+
+    The raw camera files carry a good deal that the published format notes do
+    not mention — capture timestamps, IMU angular velocity, exposure, thermal
+    state and a tracking segment id. The pace and the drift magnitude below are
+    what set the session length cap in the protocol, so they are measured here
+    rather than estimated.
+    """
+    raw = {}
+    for n in cams:
+        try:
+            raw[Path(n).stem] = json.loads(src.read(n))
+        except Exception:
+            continue
+    if not raw:
+        return
+
+    print("\n  SESSION")
+    stamps = sorted(c["timestamp"] for c in raw.values() if "timestamp" in c)
+    if len(stamps) > 1:
+        secs = stamps[-1] - stamps[0]
+        # Timestamps are seconds if the span is plausible, microseconds if not.
+        if secs > 1e5:
+            secs /= 1e6
+        rate = len(stamps) / secs * 60 if secs > 0 else 0
+        print(f"    duration:             {secs:.0f} s ({secs / 60:.1f} min)")
+        print(f"    keyframe rate:        {rate:.0f} frames/min")
+        if rate > 0:
+            print(f"    → {POSE_OPT_AUTO}-frame budget reached at "
+                  f"{POSE_OPT_AUTO / rate:.1f} min of scanning")
+            print(f"    → {POSE_OPT_MAX}-frame ceiling reached at "
+                  f"{POSE_OPT_MAX / rate:.1f} min")
+
+    segs = {c["tracking_segment"] for c in raw.values() if "tracking_segment" in c}
+    if segs:
+        print(f"    tracking segments:    {len(segs)}")
+        if len(segs) > 1:
+            print(f"    [!] tracking was lost and re-initialised {len(segs) - 1}×.")
+            print(f"        Poses across a break share no common frame.")
+
+    thermal = Counter(c["thermal_state"] for c in raw.values() if "thermal_state" in c)
+    if thermal:
+        hot = {k: v for k, v in thermal.items() if k not in ("nominal", 0)}
+        print(f"    thermal states:       {dict(thermal)}")
+        if hot:
+            print(f"    [!] device throttled during capture: {hot}")
+            print(f"        Sustained scanning heats the phone and drops the frame rate.")
+
+    blurs = sorted(c["blur_score"] for c in raw.values() if "blur_score" in c)
+    if blurs:
+        print(f"    blur score:           min {blurs[0]:.0f}  "
+              f"median {statistics.median(blurs):.0f}  max {blurs[-1]:.0f}")
+
+    spins = sorted(c["angular_velocity"] for c in raw.values()
+                   if "angular_velocity" in c)
+    if spins:
+        print(f"    angular velocity:     median {statistics.median(spins):.2f}  "
+              f"max {spins[-1]:.2f} rad/s")
+
+    # How far did global optimisation move each camera? This is the drift that
+    # accumulated along the walk, and the floor our own correction has to beat.
+    deltas = []
+    for n in corrected:
+        stem = Path(n).stem
+        if stem not in raw:
+            continue
+        try:
+            fixed = json.loads(src.read(n))
+        except Exception:
+            continue
+        a, b = raw[stem], fixed
+        try:
+            deltas.append(math.dist([a[f"t_{i}3"] for i in range(3)],
+                                    [b[f"t_{i}3"] for i in range(3)]))
+        except KeyError:
+            continue
+
+    if deltas:
+        deltas.sort()
+        p90 = deltas[int(0.9 * (len(deltas) - 1))]
+        print(f"\n  DRIFT CORRECTED BY THE OPTIMISER  ({len(deltas)} frames)")
+        print(f"    median {statistics.median(deltas) * 100:.1f} cm   "
+              f"p90 {p90 * 100:.1f} cm   max {deltas[-1] * 100:.1f} cm")
+        print(f"    This is how far raw ARKit poses had wandered. Our own")
+        print(f"    correction stage is measured against this, not against zero.")
 
 
 def report_photos(src: Source, groups: dict[str, list[str]]) -> None:

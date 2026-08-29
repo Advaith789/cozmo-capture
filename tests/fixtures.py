@@ -118,36 +118,45 @@ def depth_values(width: int, height: int, seed: int = 7,
 
 
 def confidence_values(width: int, height: int, seed: int = 11) -> list[int]:
+    """Three ARKit levels. Observed byte values are 0/54/255 — the published
+    notes say 0/127/255, and the export disagrees."""
     rng = random.Random(seed)
-    return [rng.choice([0, 127, 255, 255]) for _ in range(width * height)]
+    return [rng.choice([0, 54, 255, 255]) for _ in range(width * height)]
 
 
 def build_polycam_zip(dest: Path, frames: int = 40, corrected: bool = True,
                       width: int = 16, height: int = 12,
-                      png_filter: int | str = "cycle") -> Path:
-    """A raw export shaped like the real thing, at toy resolution."""
+                      png_filter: int | str = "cycle",
+                      wrapper: str | None = None) -> Path:
+    """A raw export shaped like the real thing, at toy resolution.
+
+    wrapper: name of a folder wrapping the whole archive, or None for the
+    layout Polycam actually produces — files at the top level. Observed
+    exports have no wrapper; the parameter exists so both shapes stay tested.
+    """
+    pre = f"{wrapper}/" if wrapper else ""
     d_vals = depth_values(width, height)
     c_vals = confidence_values(width, height)
     depth_png = encode_png_gray(width, height, 16, d_vals, png_filter)
     conf_png = encode_png_gray(width, height, 8, c_vals, png_filter)
 
     with zipfile.ZipFile(dest, "w") as zf:
-        zf.writestr("scan-01/mesh_info.json", json.dumps({"version": 1}))
-        zf.writestr("scan-01/raw.glb", b"\x00" * 1024)
-        zf.writestr("scan-01/polycam.mp4", b"\x00" * 1024)
-        zf.writestr("scan-01/thumbnail.jpg", b"\xff\xd8\xff\xd9")
+        zf.writestr(f"{pre}mesh_info.json", json.dumps({"version": 1}))
+        zf.writestr(f"{pre}raw.glb", b"\x00" * 1024)
+        zf.writestr(f"{pre}polycam.mp4", b"\x00" * 1024)
+        zf.writestr(f"{pre}thumbnail.jpg", b"\xff\xd8\xff\xd9")
         for i in range(frames):
             cam = {"t_00": 1.0, "t_01": 0.0, "t_02": 0.0, "t_03": 0.01 * i,
                    "t_10": 0.0, "t_11": 1.0, "t_12": 0.0, "t_13": 1.4,
                    "t_20": 0.0, "t_21": 0.0, "t_22": 1.0, "t_23": 0.02 * i,
                    "fx": 1592.4, "fy": 1592.4, "cx": 952.1, "cy": 714.3,
                    "width": 1920, "height": 1440, "blur_score": 0.12}
-            zf.writestr(f"scan-01/keyframes/cameras/{i:05d}.json", json.dumps(cam))
-            zf.writestr(f"scan-01/keyframes/images/{i:05d}.jpg", b"\xff\xd8\xff\xd9")
-            zf.writestr(f"scan-01/keyframes/depth/{i:05d}.png", depth_png)
-            zf.writestr(f"scan-01/keyframes/confidence/{i:05d}.png", conf_png)
+            zf.writestr(f"{pre}keyframes/cameras/{i:05d}.json", json.dumps(cam))
+            zf.writestr(f"{pre}keyframes/images/{i:05d}.jpg", b"\xff\xd8\xff\xd9")
+            zf.writestr(f"{pre}keyframes/depth/{i:05d}.png", depth_png)
+            zf.writestr(f"{pre}keyframes/confidence/{i:05d}.png", conf_png)
             if corrected:
-                zf.writestr(f"scan-01/keyframes/corrected_cameras/{i:05d}.json",
+                zf.writestr(f"{pre}keyframes/corrected_cameras/{i:05d}.json",
                             json.dumps(cam))
     return dest
 

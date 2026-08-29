@@ -91,7 +91,8 @@ class SourceAccess(unittest.TestCase):
     def test_zip_and_directory_agree(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            z = fixtures.build_polycam_zip(tmp / "scan.zip", frames=4)
+            z = fixtures.build_polycam_zip(tmp / "scan.zip", frames=4,
+                                           wrapper=None)
 
             import zipfile
             unpacked = tmp / "unpacked"
@@ -99,18 +100,56 @@ class SourceAccess(unittest.TestCase):
                 zf.extractall(unpacked)
 
             from_zip = inspect_capture.Source(z)
-            from_dir = inspect_capture.Source(unpacked / "scan-01")
+            from_dir = inspect_capture.Source(unpacked)
             self.assertEqual(from_zip.files(), from_dir.files())
             self.assertEqual(from_zip.read("keyframes/cameras/00000.json"),
                              from_dir.read("keyframes/cameras/00000.json"))
 
     def test_strips_single_root_folder(self):
+        """A wrapped archive still presents paths relative to the capture."""
         with tempfile.TemporaryDirectory() as tmp:
-            z = fixtures.build_polycam_zip(Path(tmp) / "scan.zip", frames=2)
+            z = fixtures.build_polycam_zip(Path(tmp) / "scan.zip", frames=2,
+                                           wrapper="scan-01")
             files = inspect_capture.Source(z).files()
             self.assertIn("mesh_info.json", files)
             self.assertIn("keyframes/depth/00000.png", files)
             self.assertFalse(any(f.startswith("scan-01/") for f in files))
+
+
+class ArchiveLayout(unittest.TestCase):
+    """Both shipping layouts must read identically.
+
+    Regression: the observed export has no wrapping folder, and the root-strip
+    heuristic mistook keyframes/ for one — silently removing it from every path
+    so nothing downstream found the capture at all.
+    """
+
+    def test_no_wrapper_folder_keeps_keyframes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            z = fixtures.build_polycam_zip(Path(tmp) / "s.zip", frames=3,
+                                           wrapper=None)
+            files = inspect_capture.Source(z).files()
+            self.assertIn("mesh_info.json", files)
+            self.assertIn("keyframes/depth/00000.png", files)
+            self.assertIn("keyframes/corrected_cameras/00000.json", files)
+
+    def test_both_layouts_expose_the_same_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            flat = fixtures.build_polycam_zip(Path(tmp) / "a.zip", frames=3,
+                                              wrapper=None)
+            wrapped = fixtures.build_polycam_zip(Path(tmp) / "b.zip", frames=3,
+                                                 wrapper="scan-01")
+            self.assertEqual(inspect_capture.Source(flat).files(),
+                             inspect_capture.Source(wrapped).files())
+
+    def test_sizes_resolve_without_wrapper(self):
+        """The original failure surfaced as a KeyError from size() lookups."""
+        with tempfile.TemporaryDirectory() as tmp:
+            z = fixtures.build_polycam_zip(Path(tmp) / "s.zip", frames=3,
+                                           wrapper=None)
+            src = inspect_capture.Source(z)
+            for f in src.files():
+                self.assertGreaterEqual(src.size(f), 0)
 
 
 class DepthSemantics(unittest.TestCase):
