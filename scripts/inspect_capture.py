@@ -265,16 +265,23 @@ def report_polycam(src: Source, groups: dict[str, list[str]]) -> None:
     print(f"  raw poses:            {len(cams)}")
     print(f"  optimised poses:      {len(corrected)}")
 
-    if not corrected:
-        print(f"\n  [!] corrected_cameras/ is EMPTY — no loop closure ran.")
-        print(f"      Poses are raw ARKit and carry the full accumulated drift.")
-    elif n > POSE_OPT_MAX:
+    # Frame budget and whether optimisation ran are separate facts, and the
+    # case worth diagnosing is when both are bad — an over-long scan is the
+    # usual reason loop closure never fired, so always report the count.
+    if n > POSE_OPT_MAX:
         print(f"\n  [!] {n} frames is past the ~{POSE_OPT_MAX} ceiling for optimisation.")
     elif n > POSE_OPT_AUTO:
         print(f"\n  [!] {n} frames is over the ~{POSE_OPT_AUTO} auto threshold —")
         print(f"      optimisation must be forced from the custom processing panel.")
     else:
         print(f"\n  [ok] {n} frames is inside the ~{POSE_OPT_AUTO} auto-optimisation budget.")
+
+    if not corrected:
+        print(f"\n  [!] corrected_cameras/ is EMPTY — no loop closure ran.")
+        print(f"      Poses are raw ARKit and carry the full accumulated drift.")
+        if n > POSE_OPT_AUTO:
+            print(f"      The frame count above is the likely cause. Split the walk")
+            print(f"      into shorter sessions, or force optimisation before export.")
 
     if depth and conf and len(depth) != len(conf):
         print(f"\n  [!] depth/confidence count mismatch — frames are not 1:1.")
