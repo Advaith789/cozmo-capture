@@ -1,19 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="818" height="916" viewBox="0 0 818 916">
+<svg xmlns="http://www.w3.org/2000/svg" width="821" height="919" viewBox="0 0 821 919">
 <style>.wall{fill:#f4f6f7;stroke:#1b2226;stroke-width:5;stroke-linejoin:round}.dim{stroke:#d14a16;stroke-width:1.2}.tick{stroke:#d14a16;stroke-width:1.2}text{font-family:ui-monospace,Menlo,monospace;fill:#1b2226}.d{font-size:12px;fill:#a03608}.ci{font-size:9.5px;fill:#6e7c84}.t{font-size:15px;font-weight:600}.s{font-size:10.5px;fill:#6e7c84}</style>
-<rect width="818" height="916" fill="#ffffff"/>
+<rect width="821" height="919" fill="#ffffff"/>
 <text class="t" x="90" y="26">friend1_room</text>
-<text class="s" x="90" y="42">floor area 12.65 m² (±3 cm²) · ceiling 2.987 m ±1.1 cm</text>
-<polygon class="wall" points="618.7,826.4 728.4,234.0 199.8,136.0 90.0,728.4"/>
-<line class="dim" x1="618.7" y1="826.4" x2="728.4" y2="234.0" transform="translate(15.7,2.9)"/>
-<text class="d" x="703.0" y="535.6" text-anchor="middle">3.765 m</text>
-<text class="ci" x="703.0" y="547.6" text-anchor="middle">±0.7 cm</text>
-<line class="dim" x1="728.4" y1="234.0" x2="199.8" y2="136.0" transform="translate(2.9,-15.7)"/>
-<text class="d" x="469.6" y="155.5" text-anchor="middle">3.360 m</text>
-<text class="ci" x="469.6" y="167.5" text-anchor="middle">±0.8 cm</text>
-<line class="dim" x1="199.8" y1="136.0" x2="90.0" y2="728.4" transform="translate(-15.7,-2.9)"/>
-<text class="d" x="115.4" y="426.7" text-anchor="middle">3.765 m</text>
-<text class="ci" x="115.4" y="438.7" text-anchor="middle">±0.7 cm</text>
-<line class="dim" x1="90.0" y1="728.4" x2="618.7" y2="826.4" transform="translate(-2.9,15.7)"/>
-<text class="d" x="348.9" y="806.9" text-anchor="middle">3.360 m</text>
-<text class="ci" x="348.9" y="818.9" text-anchor="middle">±0.8 cm</text>
+<text class="s" x="90" y="42">floor area 12.69 m² (±6 cm²) · ceiling 2.985 m ±0.5 cm</text>
+<polygon class="wall" points="618.7,829.4 731.3,236.4 202.6,136.0 90.0,729.0"/>
+<line class="dim" x1="618.7" y1="829.4" x2="731.3" y2="236.4" transform="translate(15.7,3.0)"/>
+<text class="d" x="704.5" y="538.5" text-anchor="middle">3.773 m</text>
+<text class="ci" x="704.5" y="550.5" text-anchor="middle">±1.0 cm</text>
+<line class="dim" x1="731.3" y1="236.4" x2="202.6" y2="136.0" transform="translate(3.0,-15.7)"/>
+<text class="d" x="472.6" y="156.7" text-anchor="middle">3.364 m</text>
+<text class="ci" x="472.6" y="168.7" text-anchor="middle">±0.7 cm</text>
+<line class="dim" x1="202.6" y1="136.0" x2="90.0" y2="729.0" transform="translate(-15.7,-3.0)"/>
+<text class="d" x="116.8" y="426.9" text-anchor="middle">3.773 m</text>
+<text class="ci" x="116.8" y="438.9" text-anchor="middle">±1.0 cm</text>
+<line class="dim" x1="90.0" y1="729.0" x2="618.7" y2="829.4" transform="translate(-3.0,15.7)"/>
+<text class="d" x="348.8" y="808.7" text-anchor="middle">3.364 m</text>
+<text class="ci" x="348.8" y="820.7" text-anchor="middle">±0.7 cm</text>
 </svg>

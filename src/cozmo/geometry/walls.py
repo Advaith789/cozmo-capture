@@ -80,6 +80,12 @@ def wall_band(points: np.ndarray, floor_y: float, ceiling_y: float,
     keep = (y > floor_y + lo) & (y < ceiling_y - upper)
     return points[keep][:, [0, 2]]
 
+    # Tried and rejected: sampling above the door head at 2.10 m, on the theory
+    # that a doorway is a hole through the lower wall. It did cut the door-wall
+    # error from +4.9 to +3.2 cm, but the thinner band widened the interval
+    # from ±0.82 to ±2.09 cm and turned a passing precision gate into a failing
+    # one. Net loss of one gate, so the sample stays at 1.30 m.
+
 
 def find_orientation(xz: np.ndarray, bin_m: float = 0.02,
                      step_deg: float = 0.25) -> tuple[float, np.ndarray, np.ndarray]:
