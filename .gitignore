@@ -1,0 +1,27 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# large capture data (tracked via manifest + script, not in git)
+data/raw/
+data/captures/
+*.zip
+*.mp4
+*.mov
+*.glb
+*.e57
+*.ply
+*.las
+*.laz
+
+# os
+.DS_Store
