@@ -53,7 +53,7 @@ omitted; a matrix that hides them is worth less than one that does not.
 | 2.15 | One furnished room with damage in 2 classes | `myroom/error photos/` | hallway 2×3 in ellipse; friend-2 room 3×3 in square | **partial** — staged and measured, not detected |
 | 2.16 | Same rooms at all three tiers | `myroom/` | Tier C ×5, photos ×3 rooms, video ×3 rooms | **partial** — captured, only Tier C processed |
 | 2.17 | One room captured twice at the same tier | `8_28 My room 1` + `8_29 My room 2` | repeatability table in benchmark report | **done** |
-| 2.18 | Tape or laser ground truth, measurements submitted | [docs/capture-bakeoff.md](capture-bakeoff.md) | walls 2.9972 / 3.0199 m, ceiling 2.9241 m | **partial** — my room only |
+| 2.18 | Tape or laser ground truth, measurements submitted | [docs/capture-bakeoff.md](capture-bakeoff.md) | walls 2.9972 / 3.0199 m, ceiling 2.9241 m, door slab 0.8382 m, frame 0.9576 m | **partial** — my room only |
 
 ## Part 2 — Gates
 
@@ -70,8 +70,8 @@ omitted; a matrix that hides them is worth less than one that does not.
 
 | # | Requirement | File | Artifact | Status |
 |---|---|---|---|---|
-| 3.1 | Our LiDAR output vs one consumer app on 2 rooms | `myroom/floorplan/` | Polycam capture taken; **dimension comparison not tabulated** | **partial** |
-| 3.2 | Name the app and version | — | Polycam; **version not recorded** | **not done** |
+| 3.1 | Our LiDAR output vs one consumer app on 2 rooms | [docs/head-to-head.md](head-to-head.md) | Polycam Floorplan (RoomPlan); beat/tied 3 of 4 dimensions | **partial** — 1 room, brief asks 2 |
+| 3.2 | Name the app and version | [docs/head-to-head.md](head-to-head.md) | Polycam Floorplan mode (RoomPlan), **v6.0.21** | **done** |
 
 ## Part 4 — Fix loop
 
@@ -98,7 +98,8 @@ omitted; a matrix that hides them is worth less than one that does not.
 | D4 | Reproduction bundle | README quick start; stdlib inspector, `requirements.txt` | **partial** |
 | D5 | Benchmark report | [docs/benchmark-report.md](benchmark-report.md) | **partial** — Tier C only |
 | D6 | Fix loop bundle | [docs/fix-loop.md](fix-loop.md) | **done** |
-| D7 | Technical report, max 6 pages | — | **not done** |
+| D7 | Technical report, max 6 pages | [docs/technical-report.md](technical-report.md) | **done** |
+| D9 | Head-to-head | [docs/head-to-head.md](head-to-head.md) | **done** (1 room) |
 | D8 | Raw benchmark data | `myroom/` (gitignored, delivered separately) | **done** |
 
 ---

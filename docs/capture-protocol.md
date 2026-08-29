@@ -17,6 +17,7 @@ judgement is a capture we did not specify.
 ## 0. Before you enter the property — 3 minutes
 
 1. Install **Polycam** from the App Store and open it. Create an account when prompted.
+   - *Validated against Polycam **6.0.21** (profile icon → Check for Updates). Later versions may move menus; the file contract in § 7 is what matters.*
 2. Tap the **profile icon** (bottom right) → **Settings** → **General** → turn **Developer Mode ON**.
    - *This cannot be applied afterwards. A scan taken with it off has no raw export and is unusable — the scan must be repeated.*
 3. iOS **Settings → Photos → Transfer to Mac or PC → Keep Originals**.
@@ -71,6 +72,24 @@ judgement is a capture we did not specify.
 8. One unbroken recording per floor. Do not pause, do not stop and restart.
 
 ## 5. Tier C — LiDAR — under 7 min per session
+
+![How to scan a room](figures/how-to-scan.svg)
+
+**What a correct corner looks like on your screen.** Both photographs are from
+our own benchmark capture.
+
+| | |
+|---|---|
+| ![Ceiling junction at a corner](figures/corner-ceiling-line.jpg) | ![Doorway and floor junction](figures/doorway-floor-line.jpg) |
+| **Tilt up.** The line where the wall meets the ceiling, and the vertical corner where two walls meet. Room height and wall lengths are computed from these. | **Tilt down.** The line where the wall meets the floor, and the full door frame top to bottom. Sweep both frame edges. |
+
+
+*Walk the perimeter with the wall on your right, pause 2 seconds at every
+corner and tilt down to the floor line then up to the ceiling line, and finish
+by walking back over where you started. Standing in the middle and turning on
+the spot produced **6× more drift** in our own benchmark and failed the
+repeatability gate — see [fix-loop.md](fix-loop.md).*
+
 
 1. Open Polycam, swipe the bottom mode strip to **Space**. Confirm Developer Mode is still on.
 2. Stand at the main entrance. Press the record button.

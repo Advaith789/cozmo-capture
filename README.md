@@ -24,7 +24,9 @@ a connector.
 | Capture route + device matrix | [docs/capture-protocol.md](docs/capture-protocol.md) | done |
 | Compliance matrix | [docs/compliance-matrix.md](docs/compliance-matrix.md) | done |
 | Benchmark report | [docs/benchmark-report.md](docs/benchmark-report.md) | Tier C only |
+| Technical report | [docs/technical-report.md](docs/technical-report.md) | done |
 | Fix loop | [docs/fix-loop.md](docs/fix-loop.md) | done |
+| Head-to-head vs Polycam | [docs/head-to-head.md](docs/head-to-head.md) | 1 room |
 | Format verification | [docs/capture-bakeoff.md](docs/capture-bakeoff.md) | done |
 | Output contract | `out/*.json`, `out/*.svg` | done |
 
