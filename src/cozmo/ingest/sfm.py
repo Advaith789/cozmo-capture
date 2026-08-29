@@ -52,6 +52,7 @@ class SfmResult:
     scale_hi: float                  # low and high ends of the scale prior
     n_views: int
     mean_inliers: float
+    views: list = None
 
 
 def intrinsics_from_fov(width: int, height: int, equiv35: float = 26.0
@@ -81,7 +82,8 @@ def _match(det, bf, a, b):
     return src, dst
 
 
-def reconstruct(images: list[np.ndarray], K: np.ndarray) -> SfmResult | None:
+def reconstruct(images: list[np.ndarray], K: np.ndarray,
+                apply_height_prior: bool = True) -> SfmResult | None:
     """Incremental reconstruction with relative scale resolved between views.
 
     Two-view pose recovery returns a translation of unit length, because the
@@ -110,6 +112,7 @@ def reconstruct(images: list[np.ndarray], K: np.ndarray) -> SfmResult | None:
     poses = [np.eye(4)]
     cloud: list[np.ndarray] = []
     inlier_counts: list[int] = []
+    views: list[dict] = []             # per view: pose, its points, their pixels
     prev_pair: dict | None = None      # matches and 3D of the previous step
 
     for i in range(len(images) - 1):
@@ -180,22 +183,26 @@ def reconstruct(images: list[np.ndarray], K: np.ndarray) -> SfmResult | None:
         Xs = X * scale
         cloud.append((T_prev[:3, :3] @ Xs.T).T + T_prev[:3, 3])
         prev_pair = {"train_idx": ti_g, "points_in_cam": Xs}
+        views.append({"index": i, "pose": T_prev,
+                      "points_cam": Xs, "pixels": src[good][ok]})
 
     if len(poses) < 3 or not cloud:
         return None
 
     points = np.vstack(cloud)
-    scaled = _apply_scale(points, poses)
-    if scaled is None:
-        return None
-    points, poses, _ = scaled
+    if apply_height_prior:
+        scaled = _apply_scale(points, poses)
+        if scaled is None:
+            return None
+        points, poses, _ = scaled
 
     return SfmResult(
         poses=poses, points=points, K=K, scale_source="camera_height_prior",
         scale_lo=CAMERA_HEIGHT_LO / CAMERA_HEIGHT_M,
         scale_hi=CAMERA_HEIGHT_HI / CAMERA_HEIGHT_M,
         n_views=len(poses),
-        mean_inliers=float(np.mean(inlier_counts)) if inlier_counts else 0.0)
+        mean_inliers=float(np.mean(inlier_counts)) if inlier_counts else 0.0,
+        views=views)
 
 
 def _apply_scale(points: np.ndarray, poses: list[np.ndarray]):

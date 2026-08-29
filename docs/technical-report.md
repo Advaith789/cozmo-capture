@@ -207,10 +207,25 @@ what left the capture itself as the only suspect.
 
 Ordered by how much they cost.
 
-**Tiers A and B are captured but not processed.** Photos and video exist for
-three rooms. No ingest was written for either. The walk-in test can only be
-served at the LiDAR tier. This is the biggest gap in the submission and it is a
-scope decision, not an oversight.
+**Tiers A and B reconstruct but do not measure.** Both are built and both run.
+`ingest/camera.py` does incremental structure from motion over the photos or
+sampled video frames, and `ingest/depth.py` scales the result with a metric
+monocular depth model (Depth Anything V2, indoor metric variant, run locally,
+disclosed as the brief requires). Feature matching is not the problem: adjacent
+video frames give 559 to 934 RANSAC inliers, well past what a stable pose needs.
+
+The problem is drift. Chaining two view poses across 110 frames without bundle
+adjustment stretches the reconstruction, and per view scale estimates then
+disagree by more than 50%, so no single factor fixes it. Measured against the
+LiDAR tier on the same room, Tier B came out 3 to 4 times too large. Three
+approaches were tried and none reached usable geometry: a camera height prior,
+metric depth scaling, and single image reconstruction with no poses at all.
+
+What is missing is bundle adjustment and loop closure over the whole sequence,
+which is the same work the capture app does on device. `pycolmap` is the right
+tool and was not integrated in time. **Both tiers are therefore reported as
+reconstructing but not measuring, and the walk-in test can only be served at
+the LiDAR tier.** That is the largest gap in the submission.
 
 **Opening detection exists but we do not claim the gate.** The detector finds
 holes in a fitted wall: a region with no returns bounded by returns, classified
@@ -281,9 +296,11 @@ plane and look for a region with no returns bounded by returns. A door reaches
 the floor line, a window has wall below it. That distinction is geometric, not
 learned, and it turns a zero into a scored gate.
 
-**3. Tier A ingest.** The photos are sitting there with EXIF intact. Even a
-crude path with honestly wide intervals beats a tier that does not run, because
-a tier that does not run scores zero on 30% of the grade.
+**3. Bundle adjustment for tiers A and B.** Everything else is built: features,
+matching, pose chaining, relative scale, metric depth, dense back projection.
+The reconstruction drifts because the poses are never globally optimised.
+Driving `pycolmap`'s incremental mapper instead of the hand rolled chain is the
+single change most likely to make both camera tiers work.
 
 **4. Buy a laser measure.** Twenty five dollars. It is the cheapest accuracy
 improvement available to this project and it is not a code change. Right now we

@@ -1,2 +1,3 @@
+# Core pipeline, Tier C (LiDAR). This is all the submission needs.
+# A clean machine reaches a rendered plan with just this.
 numpy>=2.0
-opencv-python-headless

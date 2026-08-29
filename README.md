@@ -44,6 +44,11 @@ less precise than the gate it was meant to certify, which is written up as a
 result rather than buried: see [technical-report.md](docs/technical-report.md)
 section 3.
 
+**Tiers A and B** run structure from motion plus a metric depth model and
+produce a reconstruction, but drift without bundle adjustment leaves the
+dimensions 3 to 4 times too large, so they are not claimed. Their dependencies
+live in `requirements-camera.txt` and are not needed for the core pipeline.
+
 **Not built:** Tier A and Tier B ingest (captured, unprocessed), opening
 detection, multi-room stitching, damage detection. These were scope decisions
 against a 48-hour budget and are listed in the compliance matrix.

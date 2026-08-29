@@ -1,0 +1,7 @@
+# Tiers A and B only. EXPERIMENTAL: these reconstruct but do not yet produce
+# usable room dimensions, see docs/technical-report.md section 5.
+# Roughly 2 GB installed, which is why it is kept out of the core requirements:
+# the brief asks for a fresh machine to reach a running pipeline in 15 minutes.
+opencv-python-headless
+torch
+transformers
