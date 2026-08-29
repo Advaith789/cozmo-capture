@@ -80,8 +80,7 @@ our own benchmark capture.
 
 | | |
 |---|---|
-| ![Ceiling junction at a corner](figures/corner-ceiling-line.jpg) | ![Doorway and floor junction](figures/doorway-floor-line.jpg) |
-| **Tilt up.** The line where the wall meets the ceiling, and the vertical corner where two walls meet. Room height and wall lengths are computed from these. | **Tilt down.** The line where the wall meets the floor, and the full door frame top to bottom. Sweep both frame edges. |
+| ![Ceiling junction at a corner](figures/corner-ceiling-line.svg) | ![Doorway and floor junction](figures/doorway-floor-line.svg) |
 
 
 *Walk the perimeter with the wall on your right, pause 2 seconds at every
