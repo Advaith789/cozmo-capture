@@ -14,100 +14,36 @@ native iOS Camera for video and photos. See
 
 ## Status
 
-Capture route verified across all three tiers. The Tier C pipeline runs end to
-end and produces its first measurement; tiers A and B ingest are not written.
+Tier C runs end to end: capture → ingest → walls → ceiling → room → JSON +
+rendered plan, one command, with a bootstrapped interval on every number.
+Validated against tape on one room, run on five captures across four rooms plus
+a connector.
 
-| Step | | |
+| Deliverable | Where | |
 |---|---|---|
-| 1 | Repo scaffold, secrets ignored | done |
-| 2 | Export bake-off — verify what the export actually contains | Tier C done; A and B outstanding |
-| 3 | One-page capture protocol + device matrix | done, file contract verified |
-| 4 | Benchmark set + ground truth | blocked on a tape or laser |
-| — | Tier C pipeline: ingest → planes → ceiling height | **runs** |
-| 5 | Gates, then the fix loop | not started |
-| 6 | Head-to-head vs incumbent | not started |
+| Capture route + device matrix | [docs/capture-protocol.md](docs/capture-protocol.md) | done |
+| Compliance matrix | [docs/compliance-matrix.md](docs/compliance-matrix.md) | done |
+| Benchmark report | [docs/benchmark-report.md](docs/benchmark-report.md) | Tier C only |
+| Fix loop | [docs/fix-loop.md](docs/fix-loop.md) | done |
+| Format verification | [docs/capture-bakeoff.md](docs/capture-bakeoff.md) | done |
+| Output contract | `out/*.json`, `out/*.svg` | done |
 
-Measured so far: 95 keyframes/min, so the 700-frame pose-optimisation budget
-is 7.3 minutes of scanning. Raw ARKit poses drifted a median 5.3 cm and up to
-42 cm over a single 2.5-minute room scan.
-
-Ground truth (tape): the room is a near-cube, 9'10" = **2.9972 m** on the
-measured wall and floor-to-ceiling.
-
-First wall measurement, from fitted wall planes:
+**Headline result** — my room, scan 2, against tape:
 
 ```
-axis B    2.9956 m   vs tape 2.9972   -0.2 cm   PASSES the 1.5 cm gate
+ceiling height   2.9364 m   precision ±1.23 cm PASS   accuracy +1.2 cm PASS
+wall pair A      3.0359 m   precision ±0.70 cm PASS   accuracy +3.9 cm FAIL
+wall pair B      3.1600 m   precision ±1.17 cm PASS   accuracy +14.0 cm FAIL
 ```
 
-Reached by detecting walls as planes rather than measuring the spread of
-points. The percentile approaches it replaced returned anywhere from 2.37 m to
-4.10 m on the same data depending on the trim chosen — the plane fit is
-immune to both the furniture that occludes the floor before the wall and the
-noise that sprays past it.
+Precision passes on 5 of 6 gates across both scans. Wall-length accuracy fails
+because a room is measured in isolation with its doors open, so the scan sees
+through the doorway and a hallway surface competes as a candidate wall — see
+[fix-loop.md](docs/fix-loop.md) § 4.
 
-Two correctness checks that need no ground truth both pass: the recovered room
-axes are orthogonal to machine precision, and each opposing wall pair is
-parallel to within 1e-4.
-
-Ceiling height output, same scan:
-
-```
-ceiling height   2.9638 m [2.8524, 2.9796]  (±6.36 cm, n=60)
-gate ≤1.5 cm     FAIL
-```
-
-Reported as a failure because it is one. The estimate agrees with Polycam's
-independent mesh to 7 cm, which validates the ingest chain, but the interval is
-four times the gate.
-
-Fitting planes per frame instead of pooling did **not** improve the interval
-(±7.40 cm vs ±6.36 cm). It did split the error into its two parts, which is
-what mattered:
-
-| source | measured |
-|---|---|
-| depth sensor (within-frame residual) | **0.55 cm** floor, 0.80 cm ceiling |
-| pose disagreement (between-frame spread) | **4.22 cm** floor, 4.04 cm ceiling |
-
-The sensor is already five to eight times better than the gate needs. Every bit
-of the error is in the poses — and these are Polycam's *loop-closed* poses, so
-roughly 4 cm of residual drift survives its correction.
-
-`geometry/drift.py` implements plane-anchored correction, and building it
-surfaced the real problem. Of 120 keyframes, 67 observed the floor, 27 the
-ceiling, and **1 observed both**. Correcting frames against the surfaces they
-saw leaves the floor group and the ceiling group in two disconnected
-components, so the *distance between the planes* — the measurement itself — is
-not observable from the plane fits at all. It links only through a temporal
-smoothness prior, and the answer then slides with that prior's strength:
-
-| σ_step (m/frame) | height |
-|---|---|
-| 1e-6 (ablation, no correction) | 2.8860 m |
-| 1e-3 | 2.9461 m |
-| 2e-3 | 2.9621 m |
-| 1e-2 | 3.0206 m |
-
-13.5 cm of range on a tuning parameter, against a 1.5 cm gate. **This capture
-does not contain the information needed to measure its own ceiling height.** No
-algorithm recovers that; the fix belongs in the capture protocol, which already
-says to tilt down to the floor line and up to the ceiling line at every corner.
-That instruction exists precisely to create frames that see both.
-
-Also measured: the ceiling appears in only **12 of 60 frames** against the
-floor's 35. The protocol's "tilt up at every corner" needs enforcing in the
-benchmark capture.
-
-No accuracy claim is made. The interval above is precision. Whether 2.9638 m is
-*correct* needs tape or laser ground truth, which the benchmark step is
-waiting on.
-
-Nothing in this repo yet claims an accuracy number. The device matrix columns
-read *pending* on purpose — quoting an interval we have not measured is the
-specific failure the brief scores against.
-
----
+**Not built:** Tier A and Tier B ingest (captured, unprocessed), opening
+detection, multi-room stitching, damage detection. These were scope decisions
+against a 48-hour budget and are listed in the compliance matrix.
 
 ## What runs today
 

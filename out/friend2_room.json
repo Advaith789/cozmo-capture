@@ -1,0 +1,229 @@
+{
+  "schema": "cozmo-plan/0.2",
+  "generated": "2026-08-29T15:52:52+00:00",
+  "capture": {
+    "source": "8_29_2026 - Friend 2 Room.zip",
+    "tier": "C",
+    "frames_used": 160,
+    "frames_total": 307,
+    "loop_closed": true,
+    "tracking_segments": 1
+  },
+  "rooms": [
+    {
+      "name": "friend2_room",
+      "footprint": [
+        [
+          1.5027,
+          -1.4943
+        ],
+        [
+          3.1949,
+          1.0381
+        ],
+        [
+          0.6693,
+          2.7257
+        ],
+        [
+          -1.0228,
+          0.1932
+        ]
+      ],
+      "floor_area": {
+        "value": 9.2514,
+        "ci_low": 9.1685,
+        "ci_high": 9.3047,
+        "ci_half_width": 0.0681,
+        "unit": "m2",
+        "provenance": [
+          "depth:measured",
+          "pose:device_optimised",
+          "scale:sensor",
+          "method:wall_plane_intersection",
+          "interval:bootstrap_frames\u00d750"
+        ],
+        "samples": 50
+      },
+      "perimeter": {
+        "value": 12.1665,
+        "ci_low": 12.112,
+        "ci_high": 12.2015,
+        "ci_half_width": 0.0447,
+        "unit": "m",
+        "provenance": [
+          "depth:measured",
+          "pose:device_optimised",
+          "scale:sensor",
+          "method:wall_plane_intersection",
+          "interval:bootstrap_frames\u00d750"
+        ],
+        "samples": 50
+      },
+      "ceiling_height": {
+        "value": 2.9322,
+        "ci_low": 2.9184,
+        "ci_high": 2.9403,
+        "ci_half_width": 0.011,
+        "unit": "m",
+        "provenance": [
+          "depth:measured",
+          "pose:device_optimised",
+          "scale:sensor",
+          "method:drift",
+          "sigma_step:0.002",
+          "bootstrap:frames\u00d740"
+        ],
+        "samples": 160
+      },
+      "wall_lengths": [
+        {
+          "value": 3.0458,
+          "ci_low": 3.0397,
+          "ci_high": 3.0512,
+          "ci_half_width": 0.0058,
+          "unit": "m",
+          "provenance": [
+            "depth:measured",
+            "pose:device_optimised",
+            "scale:sensor",
+            "method:wall_plane_intersection",
+            "interval:bootstrap_frames\u00d750"
+          ],
+          "samples": 50
+        },
+        {
+          "value": 3.0374,
+          "ci_low": 3.0106,
+          "ci_high": 3.0541,
+          "ci_half_width": 0.0218,
+          "unit": "m",
+          "provenance": [
+            "depth:measured",
+            "pose:device_optimised",
+            "scale:sensor",
+            "method:wall_plane_intersection",
+            "interval:bootstrap_frames\u00d750"
+          ],
+          "samples": 50
+        },
+        {
+          "value": 3.0458,
+          "ci_low": 3.0397,
+          "ci_high": 3.0512,
+          "ci_half_width": 0.0058,
+          "unit": "m",
+          "provenance": [
+            "depth:measured",
+            "pose:device_optimised",
+            "scale:sensor",
+            "method:wall_plane_intersection",
+            "interval:bootstrap_frames\u00d750"
+          ],
+          "samples": 50
+        },
+        {
+          "value": 3.0374,
+          "ci_low": 3.0106,
+          "ci_high": 3.0541,
+          "ci_half_width": 0.0218,
+          "unit": "m",
+          "provenance": [
+            "depth:measured",
+            "pose:device_optimised",
+            "scale:sensor",
+            "method:wall_plane_intersection",
+            "interval:bootstrap_frames\u00d750"
+          ],
+          "samples": 50
+        }
+      ],
+      "walls": [
+        {
+          "normal": [
+            0.55345,
+            0.83289
+          ],
+          "offset_m": -0.4076,
+          "points": 322084,
+          "planarity_cm": 1.28
+        },
+        {
+          "normal": [
+            0.56664,
+            0.82397
+          ],
+          "offset_m": 2.6382,
+          "points": 266137,
+          "planarity_cm": 2.21
+        },
+        {
+          "normal": [
+            -0.83108,
+            0.55615
+          ],
+          "offset_m": -2.0797,
+          "points": 409206,
+          "planarity_cm": 2.04
+        },
+        {
+          "normal": [
+            -0.83206,
+            0.55468
+          ],
+          "offset_m": 0.9578,
+          "points": 288584,
+          "planarity_cm": 3.12
+        }
+      ],
+      "openings": []
+    }
+  ],
+  "stitched_plan": {
+    "rooms": 1,
+    "adjacency": [],
+    "status": "single-room capture; adjacency requires a multi-room capture and opening detection"
+  },
+  "damage": {
+    "regions": [],
+    "status": "not implemented"
+  },
+  "gates": [
+    {
+      "gate": "ceiling_height",
+      "limit_m": 0.015,
+      "interval_half_width_m": 0.011,
+      "precision_pass": true
+    },
+    {
+      "gate": "wall_length_0",
+      "limit_m": 0.015,
+      "interval_half_width_m": 0.0058,
+      "precision_pass": true
+    },
+    {
+      "gate": "wall_length_1",
+      "limit_m": 0.015,
+      "interval_half_width_m": 0.0218,
+      "precision_pass": false
+    },
+    {
+      "gate": "wall_length_2",
+      "limit_m": 0.015,
+      "interval_half_width_m": 0.0058,
+      "precision_pass": true
+    },
+    {
+      "gate": "wall_length_3",
+      "limit_m": 0.015,
+      "interval_half_width_m": 0.0218,
+      "precision_pass": false
+    }
+  ],
+  "known_limitations": [
+    "Openings not yet detected; the opening-width gate is unscored.",
+    "Damage regions not implemented.",
+    "Single-room capture: no stitched multi-room plan or adjacency.",
+    "Tiers A and B ingest not implemented."
+  ]
+}

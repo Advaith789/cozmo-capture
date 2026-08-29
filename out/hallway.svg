@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1478" height="1076" viewBox="0 0 1478 1076">
+<style>.wall{fill:#f4f6f7;stroke:#1b2226;stroke-width:5;stroke-linejoin:round}.dim{stroke:#d14a16;stroke-width:1.2}.tick{stroke:#d14a16;stroke-width:1.2}text{font-family:ui-monospace,Menlo,monospace;fill:#1b2226}.d{font-size:12px;fill:#a03608}.ci{font-size:9.5px;fill:#6e7c84}.t{font-size:15px;font-weight:600}.s{font-size:10.5px;fill:#6e7c84}</style>
+<rect width="1478" height="1076" fill="#ffffff"/>
+<text class="t" x="90" y="26">hallway</text>
+<text class="s" x="90" y="42">floor area 28.08 m² (±27 cm²) · ceiling 2.939 m ±2.1 cm</text>
+<polygon class="wall" points="1255.6,986.4 1388.3,399.7 222.8,136.0 90.0,722.7"/>
+<line class="dim" x1="1255.6" y1="986.4" x2="1388.3" y2="399.7" transform="translate(15.6,3.5)"/>
+<text class="d" x="1351.2" y="699.7" text-anchor="middle">3.760 m</text>
+<text class="ci" x="1351.2" y="711.7" text-anchor="middle">±1.7 cm</text>
+<line class="dim" x1="1388.3" y1="399.7" x2="222.8" y2="136.0" transform="translate(3.5,-15.6)"/>
+<text class="d" x="812.2" y="238.6" text-anchor="middle">7.469 m</text>
+<text class="ci" x="812.2" y="250.6" text-anchor="middle">±5.5 cm</text>
+<line class="dim" x1="222.8" y1="136.0" x2="90.0" y2="722.7" transform="translate(-15.6,-3.5)"/>
+<text class="d" x="127.1" y="422.7" text-anchor="middle">3.760 m</text>
+<text class="ci" x="127.1" y="434.7" text-anchor="middle">±1.7 cm</text>
+<line class="dim" x1="90.0" y1="722.7" x2="1255.6" y2="986.4" transform="translate(-3.5,15.6)"/>
+<text class="d" x="666.2" y="883.8" text-anchor="middle">7.469 m</text>
+<text class="ci" x="666.2" y="895.8" text-anchor="middle">±5.5 cm</text>
+</svg>
