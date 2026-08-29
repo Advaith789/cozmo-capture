@@ -168,7 +168,57 @@ find none of those, so on the opening gate it scores and we score zero.
 
 ---
 
-## 3. Why the ground truth is the weak link
+## 3. Validation against exact truth
+
+Every accuracy figure above is scored against a tape good to a few centimetres,
+which cannot separate our error from the ruler's. So we also built a room in
+software: a box of known dimensions, ray-cast depth maps from virtual cameras
+walking its perimeter, fed to the same ingest the LiDAR tier uses. The truth is
+then exact and any error is entirely the algorithm's.
+
+| condition | worst wall | ceiling |
+|---|---|---|
+| perfect data | -0.40 cm | **exact** |
+| depth noise 1 cm | +0.22 cm | +1.98 cm |
+| depth noise 5 cm | +1.11 cm | +9.80 cm |
+| depth noise 10 cm | +1.34 cm | +14.05 cm |
+| pose noise 5 cm | +1.65 cm | +9.93 cm |
+| pose noise 10 cm | +10.60 cm | +9.94 cm |
+| rotated 0 to 63 degrees | +0.40 cm at every angle | exact |
+| only 6 views | +0.56 cm | **-147 cm** |
+| 10 views or more | +0.48 cm | exact |
+
+**The geometry is correct.** On exact input the walls land within half a
+centimetre and the ceiling is exact to the millimetre. Everything in section 2
+is therefore capture quality and ground truth, not algorithm.
+
+**It is rotation invariant**, identical to three decimal places whether the room
+sits square to the world or at 63 degrees. The axis finder earns its result
+rather than getting lucky on an axis-aligned box.
+
+**Walls average noise out; the ceiling chases it.** Plane fitting shrugs off
+10 cm of depth noise. The ceiling grows by about **twice the noise sigma**,
+because the envelope estimator reads each surface at a tail quantile and
+symmetric noise pushes the floor down and the ceiling up together. That is the
+price of the estimator that removed a 3.6 cm bias, stated as a number rather
+than a caveat: at the sensor's real 0.55 cm it costs about a centimetre, and a
+noisier sensor would need a different estimator, not a wider interval.
+
+Worth comparing prediction to reality. At 0.55 cm of real noise the model
+expects the ceiling to read about 1.1 cm **high**; the real captures read 0.2 to
+0.7 cm **low**. Something in a real room pulls the other way, almost certainly
+light fittings hanging below the ceiling plane and clutter sitting above the
+floor, and the two effects happen to be close to cancelling here. We would not
+rely on that in a different room.
+
+**Ceiling height needs about ten views.** At six it failed by 1.5 metres, the
+same sparse-coverage failure the non-compliant capture showed, reproduced
+deliberately with a known cause.
+
+These are pinned as assertions in `tests/test_geometry.py`, not a one-off
+experiment, alongside a determinism check because repeatability is scored.
+
+## 4. Why the ground truth is the weak link
 
 This is the finding we did not expect to be writing up.
 
@@ -190,7 +240,7 @@ whichever tape reading made the gate pass.
 
 ---
 
-## 4. What we fixed
+## 5. What we fixed
 
 Full write-up in `fix-loop.md`. Short version below.
 
@@ -230,7 +280,7 @@ what left the capture itself as the only suspect.
 
 ---
 
-## 5. Limitations
+## 6. Limitations
 
 Ordered by how much they cost.
 
@@ -308,7 +358,7 @@ only.
 
 ---
 
-## 6. Another eight hours?
+## 7. Another eight hours?
 
 In rough order of value per hour.
 

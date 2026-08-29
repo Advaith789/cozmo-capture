@@ -279,18 +279,28 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="cozmo")
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    r = sub.add_parser("run", help="full pipeline: capture in, contract out")
-    r.add_argument("capture")
-    r.add_argument("--out", default="out")
+    r = sub.add_parser("run", help="full pipeline: capture in, contract out",
+                       description="Read a capture, measure the room, write a "
+                                   "JSON contract and a dimensioned SVG plan.")
+    r.add_argument("capture", help="Polycam raw export (.zip or folder), "
+                                   "photo folder, or video file")
+    r.add_argument("--out", default="out", help="output directory (default: out)")
     # Defaults are the settings every number in the benchmark report was
     # produced at. Typing the bare command on the day must reproduce the
     # quality the report claims, not something looser.
-    r.add_argument("--frames", type=int, default=160)
-    r.add_argument("--bootstrap", type=int, default=40)
-    r.add_argument("--sigma-step", dest="sigma_step", type=float, default=0.002)
-    r.add_argument("--name", default="room")
+    r.add_argument("--frames", type=int, default=160,
+                   help="keyframes to load; the benchmark used 160")
+    r.add_argument("--bootstrap", type=int, default=40,
+                   help="resamples for the ceiling interval")
+    r.add_argument("--sigma-step", dest="sigma_step", type=float, default=0.002,
+                   help="drift correction strength, metres per keyframe; "
+                        "near zero reproduces the uncorrected case")
+    r.add_argument("--name", default="room",
+                   help="name for the room and the output files")
     r.add_argument("--height-method", dest="height_method", default="envelope",
-                   choices=["envelope", "drift", "per_frame", "pooled"])
+                   choices=["envelope", "drift", "per_frame", "pooled"],
+                   help="ceiling estimator; the last three are kept for the "
+                        "fix-loop ablation")
     r.add_argument("--wall-draws", dest="wall_draws", type=int, default=50,
                    help="bootstrap resamples for the room's intervals")
     r.add_argument("--truth-walls", dest="truth_walls", default=None,
