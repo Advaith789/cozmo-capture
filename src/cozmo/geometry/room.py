@@ -85,6 +85,22 @@ def _perimeter(poly: np.ndarray) -> float:
     return float(np.hypot(d[:, 0], d[:, 1]).sum())
 
 
+def out_of_square_deg(axes: RoomAxes) -> float:
+    """Worst angle between a fitted wall normal and the axis it belongs to.
+
+    The rectangular prior is safe when the room really is rectangular. On the
+    benchmark's rooms every wall sat within 0.7 degrees of its axis. A bay
+    window, an angled wall or a room that is simply not a box would show far
+    more, and snapping those to the axes would report a room that is not there.
+    """
+    worst = 0.0
+    for axis, wl in ((axes.axis_a, axes.walls_a), (axes.axis_b, axes.walls_b)):
+        for w in wl:
+            cosang = abs(float(np.clip(w.normal @ axis, -1.0, 1.0)))
+            worst = max(worst, float(np.degrees(np.arccos(cosang))))
+    return worst
+
+
 def measure(axes: RoomAxes, square_up: bool = True
             ) -> tuple[np.ndarray, list[float], float, float] | None:
     """Polygon, its edge lengths, area and perimeter — one draw's worth."""
@@ -94,6 +110,11 @@ def measure(axes: RoomAxes, square_up: bool = True
     edges = [float(np.hypot(*(poly[(i + 1) % len(poly)] - poly[i])))
              for i in range(len(poly))]
     return poly, edges, _area(poly), _perimeter(poly)
+
+
+# Beyond this the room is not a box, and forcing it into one would invent
+# geometry. Real rooms in the benchmark measured under 0.7 degrees.
+SQUARE_LIMIT_DEG = 3.0
 
 
 def build(axes: RoomAxes, height: Measurement, name: str = "room",
@@ -108,7 +129,9 @@ def build(axes: RoomAxes, height: Measurement, name: str = "room",
     plane uncertainty and says so in its provenance — an assumed interval is
     worth reporting only if it is labelled as one.
     """
-    base = measure(axes)
+    skew = out_of_square_deg(axes)
+    square = skew <= SQUARE_LIMIT_DEG
+    base = measure(axes, square_up=square)
     if base is None:
         return None
     poly, edges, area, per = base
@@ -123,9 +146,11 @@ def build(axes: RoomAxes, height: Measurement, name: str = "room",
         return centre + out * (1 + delta / np.maximum(norms, 1e-6))
 
     prov = ["depth:measured", "pose:device_optimised", "scale:sensor",
-            "method:wall_plane_intersection"]
+            "method:wall_plane_intersection",
+            f"prior:rectangular_room({skew:.1f}deg_skew)" if square
+            else f"prior:none_room_is_{skew:.1f}deg_out_of_square"]
 
-    sampled = [measure(d) for d in (draws or [])]
+    sampled = [measure(d, square_up=square) for d in (draws or [])]
     sampled = [x for x in sampled if x is not None and len(x[1]) == len(edges)]
 
     if len(sampled) >= 20:

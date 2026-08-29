@@ -275,6 +275,132 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def _drift_median_cm(path: Path) -> float | None:
+    """Median distance the pose optimiser moved each camera, in centimetres.
+
+    Reads only the two camera folders, so it stays fast enough for a check that
+    has to answer while someone is still standing in the room.
+    """
+    import json
+    import math
+    import zipfile
+
+    try:
+        if zipfile.is_zipfile(path):
+            z = zipfile.ZipFile(path)
+            names = z.namelist()
+            read = z.read
+        else:
+            names = [str(p.relative_to(path)) for p in path.rglob("*") if p.is_file()]
+            read = lambda n: (path / n).read_bytes()  # noqa: E731
+
+        raw = sorted(n for n in names if n.startswith("keyframes/cameras/"))
+        cor = {Path(n).stem for n in names
+               if n.startswith("keyframes/corrected_cameras/")}
+        if not raw or not cor:
+            return None
+        step = max(1, len(raw) // 40)
+        deltas = []
+        for n in raw[::step]:
+            stem = Path(n).stem
+            if stem not in cor:
+                continue
+            a = json.loads(read(n))
+            b = json.loads(read(f"keyframes/corrected_cameras/{stem}.json"))
+            deltas.append(math.dist([a[f"t_{i}3"] for i in range(3)],
+                                    [b[f"t_{i}3"] for i in range(3)]))
+        if len(deltas) < 5:
+            return None
+        deltas.sort()
+        return deltas[len(deltas) // 2] * 100
+    except Exception:
+        return None
+
+
+def cmd_check(args: argparse.Namespace) -> int:
+    """Go or no-go on a capture, in seconds, before committing to a full run.
+
+    Exists for the walk-in test. If a capture is unusable you want to know while
+    the operator is still standing in the room, not after a full run in front of
+    an audience. Reads only metadata and a handful of frames.
+    """
+    path = Path(args.capture)
+    if not path.exists():
+        print(f"error: {path} does not exist", file=sys.stderr)
+        return 1
+    try:
+        tier = detect_tier(path)
+    except ValueError as exc:
+        print(f"NO GO   {exc}", file=sys.stderr)
+        return 1
+
+    print(f"capture   {path.name}\ntier      {tier}")
+    if tier != "C":
+        print("\nNO GO     only the LiDAR tier measures reliably. Ask for a "
+              "Polycam Space capture with Developer Mode on.")
+        return 2
+
+    try:
+        from cozmo.ingest import lidar
+        cap = lidar.load(path, max_frames=12)
+    except Exception as exc:
+        print(f"\nNO GO     cannot read this capture: {exc}", file=sys.stderr)
+        return 1
+
+    total = cap.meta["total_keyframes"]
+    problems, warnings = [], []
+
+    if not cap.meta["loop_closed"]:
+        problems.append("no corrected poses: the scan was too long or was not "
+                        "processed. Re-scan in under 7 minutes and let it finish.")
+    if cap.meta["tracking_segments"] > 1:
+        problems.append(f"tracking broke {cap.meta['tracking_segments'] - 1} time(s): "
+                        "poses either side share no frame. Re-scan without "
+                        "covering the lens or moving too fast.")
+    if total < 60:
+        problems.append(f"only {total} keyframes: too few to measure. Walk the "
+                        "perimeter more slowly.")
+    elif total < 120:
+        warnings.append(f"{total} keyframes is on the thin side; 150+ is better.")
+
+    # The strongest signal of a bad capture, and it costs only JSON reads:
+    # how far the optimiser had to move each camera. On the benchmark's
+    # non-compliant scan this was 5.3 cm median against 0.9 cm for a scan that
+    # followed the protocol, and it is what separated the two.
+    drift = _drift_median_cm(path)
+    if drift is not None:
+        print(f"drift     {drift:.1f} cm median correction")
+        if drift > 4.0:
+            problems.append(f"{drift:.1f} cm of drift: the walk did not give the "
+                            "optimiser enough to work with. Walk the perimeter "
+                            "with the wall on your right and pause at corners.")
+        elif drift > 2.0:
+            warnings.append(f"{drift:.1f} cm of drift is high; under 1 cm is "
+                            "what a compliant capture gives.")
+
+    isos = [f.meta["iso"] for f in cap.frames if "iso" in f.meta]
+    if isos and sorted(isos)[len(isos) // 2] >= 1600:
+        warnings.append("room is underlit: LiDAR copes, but tracking is weaker. "
+                        "Turn on every light if you can.")
+
+    spins = [f.meta["angular_velocity"] for f in cap.frames
+             if "angular_velocity" in f.meta]
+    if spins and sum(x > 1.0 for x in spins) / len(spins) > 0.3:
+        warnings.append("a lot of fast panning; sweep more slowly next time.")
+
+    print(f"frames    {total} keyframes, loop-closed: {cap.meta['loop_closed']}")
+    for w in warnings:
+        print(f"  warn    {w}")
+    for p_ in problems:
+        print(f"  STOP    {p_}")
+
+    if problems:
+        print("\nNO GO     re-capture before running the pipeline.")
+        return 3
+    print(f"\nGO        run:  python -m cozmo run \"{path}\" --name <room>")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="cozmo")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -309,6 +435,10 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--truth-height", dest="truth_height", type=float, default=None,
                    help="tape/laser ceiling height in metres, for gate scoring")
     r.set_defaults(func=cmd_run)
+
+    ck = sub.add_parser("check", help="fast go/no-go on a capture before running")
+    ck.add_argument("capture", help="the capture to sanity check")
+    ck.set_defaults(func=cmd_check)
 
     m = sub.add_parser("measure", help="measure a capture")
     m.add_argument("capture")

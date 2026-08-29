@@ -53,6 +53,30 @@ live in `requirements-camera.txt` and are not needed for the core pipeline.
 detection, multi-room stitching, damage detection. These were scope decisions
 against a 48-hour budget and are listed in the compliance matrix.
 
+## On the day: the walk-in runbook
+
+```sh
+# 1. the moment the capture lands, before anything else. Takes under a second.
+python -m cozmo check "<their-export>.zip"
+
+# 2. if it says GO
+python -m cozmo run "<their-export>.zip" --name walkin
+```
+
+`check` reads only metadata and a dozen frames, and answers GO or NO GO in
+under a second. It catches the failures that cost you the room: developer mode
+left off, tracking broken mid-walk, too few keyframes, and above all **drift**,
+which is what separates a capture that follows the protocol from one that does
+not. On our own benchmark it reads 1.0 cm on the compliant scan and 5.3 cm on
+the non-compliant one, and stops on the second.
+
+If it says NO GO, ask to re-capture. That is a far better outcome than running
+the pipeline on a capture that cannot support a measurement.
+
+`run` takes about 45 seconds and writes a JSON contract and a dimensioned SVG
+plan. It applies a rectangular-room prior only where the walls justify it, and
+records in the provenance how far out of square the room actually was.
+
 ## What runs today
 
 Python 3.12. No dependencies, the inspector is stdlib-only by design, so

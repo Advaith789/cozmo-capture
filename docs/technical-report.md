@@ -284,6 +284,30 @@ what left the capture itself as the only suspect.
 
 Ordered by how much they cost.
 
+**Tiers A and B reconstruct but do not measure, and the blocker is the capture,
+not the code.** We tested this properly rather than assuming. COLMAP, the
+standard incremental structure-from-motion tool, was run on both:
+
+| tier | input | COLMAP result |
+|---|---|---|
+| A, photos | 29 stills of one room | **4 of 29 registered**, three reconstructions discarded as too small |
+| B, video | 70 frames, every 12th | 27 of 70 registered, reconstruction fragmented; extents in the ratio 1 : 0.53 : 0.21 for a room that is 1 : 0.89 : 0.79 |
+
+The gold-standard tool fails on this footage, which moves the diagnosis from
+"our SfM is weak" to "these captures do not support reconstruction". Sampling
+video more densely to fix it pushed COLMAP past two minutes per room, which is
+too slow for a timed walk-in test regardless.
+
+**What would fix it is a protocol change, not more code.** The photo tier's six
+to eight stills from three standing positions give wide baselines and large
+viewpoint changes between consecutive shots, which is close to the worst case
+for feature matching. Reconstruction needs a continuous orbit in small steps,
+many more frames, and better light than a room shot at ISO 3200. That is a
+different capture instruction from the one we wrote, and we would test it
+against COLMAP registration rate before trusting it.
+
+The original description follows.
+
 **Tiers A and B reconstruct but do not measure.** Both are built and both run.
 `ingest/camera.py` does incremental structure from motion over the photos or
 sampled video frames, and `ingest/depth.py` scales the result with a metric
