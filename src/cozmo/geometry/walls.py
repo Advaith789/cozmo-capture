@@ -147,10 +147,22 @@ def find_walls(xz: np.ndarray, axis: np.ndarray, bin_m: float = 0.02,
     return sorted(walls, key=lambda w: w.offset)
 
 
-def detect(points: np.ndarray, floor_y: float, ceiling_y: float) -> RoomAxes:
+def detect(points: np.ndarray, floor_y: float, ceiling_y: float,
+           axes: tuple[np.ndarray, np.ndarray] | None = None,
+           theta_deg: float = 0.0) -> RoomAxes:
+    """Detect walls. Pass `axes` to reuse an orientation already solved for.
+
+    The orientation search sweeps 360 rotations across the whole cloud, which
+    dominates the runtime. Bootstrap resamples of the same capture describe the
+    same room, so its orientation is not what varies between them — the wall
+    offsets are. Reusing the axes makes resampling affordable.
+    """
     xz = wall_band(points, floor_y, ceiling_y)
-    deg, a, b = find_orientation(xz)
-    return RoomAxes(theta_deg=deg, axis_a=a, axis_b=b,
+    if axes is None:
+        theta_deg, a, b = find_orientation(xz)
+    else:
+        a, b = axes
+    return RoomAxes(theta_deg=theta_deg, axis_a=a, axis_b=b,
                     walls_a=find_walls(xz, a), walls_b=find_walls(xz, b))
 
 
@@ -163,3 +175,39 @@ def span(walls: list[Wall]) -> float | None:
     if abs(lo.normal @ hi.normal) < 0.98:
         return None
     return float(abs(hi.offset - lo.offset))
+
+
+def refit(base: RoomAxes, points: np.ndarray, floor_y: float, ceiling_y: float,
+          band: float = 0.06) -> RoomAxes | None:
+    """Re-fit an already-identified set of walls on a different sample.
+
+    Detection — deciding which planes are walls at all — is a model choice, and
+    it is made once on the whole capture. Resampling it as well conflates two
+    different uncertainties: a draw that mistakes a wardrobe for a wall does
+    not tell us how precisely we know where a wall is, it tells us the detector
+    is unstable, which is worth reporting on its own rather than smearing into
+    every dimension.
+
+    So this holds the wall set fixed and re-fits each plane's position.
+    """
+    xz = wall_band(points, floor_y, ceiling_y)
+
+    def again(ws: list[Wall], axis: np.ndarray) -> list[Wall] | None:
+        proj = xz @ axis
+        out = []
+        for w in ws:
+            near = xz[np.abs(proj - w.offset) < band]
+            if len(near) < 200:
+                return None
+            normal, offset, rms = _fit_line(near)
+            if normal @ axis < 0:
+                normal, offset = -normal, -offset
+            out.append(Wall(normal=normal, offset=offset,
+                            n_points=len(near), residual_cm=rms * 100))
+        return out
+
+    wa, wb = again(base.walls_a, base.axis_a), again(base.walls_b, base.axis_b)
+    if wa is None or wb is None:
+        return None
+    return RoomAxes(theta_deg=base.theta_deg, axis_a=base.axis_a,
+                    axis_b=base.axis_b, walls_a=wa, walls_b=wb)

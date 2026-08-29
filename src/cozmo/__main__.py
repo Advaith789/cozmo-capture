@@ -95,9 +95,124 @@ def cmd_measure(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_run(args: argparse.Namespace) -> int:
+    """One command per capture: raw export in, JSON contract and plan out."""
+    import numpy as np
+
+    from cozmo.contract import render, schema
+    from cozmo.geometry import room as room_mod
+    from cozmo.geometry import walls
+    from cozmo.geometry.height import _modes, ceiling_height
+    from cozmo.ingest import lidar
+
+    path = Path(args.capture)
+    if not path.exists():
+        print(f"error: {path} does not exist", file=sys.stderr)
+        return 1
+
+    tier = detect_tier(path)
+    print(f"capture   {path.name}\ntier      {tier}")
+    if tier != "C":
+        print(f"\nTier {tier} ingest is not implemented yet.")
+        return 2
+
+    t0 = time.time()
+    cap = lidar.load(path, max_frames=args.frames)
+    print(f"frames    {cap.meta['loaded']} of {cap.meta['total_keyframes']}")
+
+    height = ceiling_height(cap, method="drift", bootstrap=args.bootstrap,
+                            sigma_step=args.sigma_step)
+    pts = np.vstack([lidar.to_world_points(f) for f in cap.frames])
+    fy, cy = _modes(pts[:, 1])
+    axes = walls.detect(pts, fy, cy)
+
+    # Resample frames and re-detect, so the room's intervals carry the same
+    # pose disagreement the ceiling interval does rather than an assumed value.
+    clouds = [c for c in (lidar.to_world_points(f) for f in cap.frames) if len(c)]
+    rng = np.random.default_rng(0)
+    draws = []
+    print(f"bootstrap {args.wall_draws} wall refits", end="", flush=True)
+    for _ in range(args.wall_draws):
+        pick = rng.integers(0, len(clouds), len(clouds))
+        sub = np.vstack([clouds[i] for i in pick])
+        d = walls.refit(axes, sub, fy, cy)
+        if d is not None:
+            draws.append(d)
+        print(".", end="", flush=True)
+    print()
+
+    rm = room_mod.build(axes, height, name=args.name, draws=draws)
+    if rm is None:
+        print("error: could not close a room polygon from the detected walls",
+              file=sys.stderr)
+        return 3
+
+    truth_walls = None
+    if args.truth_walls:
+        truth_walls = [float(x) for x in args.truth_walls.split(",")]
+        if len(truth_walls) != 2:
+            print("error: --truth-walls needs two values, one per wall pair",
+                  file=sys.stderr)
+            return 4
+
+    gates = [
+        schema.gate("ceiling_height", rm.ceiling_height, 0.015,
+                    truth=args.truth_height),
+        # Opposite edges of the polygon are the same physical wall pair, so a
+        # single tape reading scores both.
+        *[schema.gate(f"wall_length_{i}", m, 0.015,
+                      truth=(truth_walls[i % 2] if truth_walls else None))
+          for i, m in enumerate(rm.wall_lengths)],
+    ]
+    notes = [
+        "Openings not yet detected; the opening-width gate is unscored.",
+        "Damage regions not implemented.",
+        "Single-room capture: no stitched multi-room plan or adjacency.",
+        "Tiers A and B ingest not implemented.",
+    ]
+
+    out = Path(args.out)
+    doc = schema.build(cap, [rm], gates=gates, notes=notes)
+    jpath = schema.write(doc, out / f"{args.name}.json")
+    spath = render.write(rm, out / f"{args.name}.svg", title=args.name)
+
+    print(f"\nfloor area       {rm.floor_area}")
+    print(f"perimeter        {rm.perimeter}")
+    print(f"ceiling height   {rm.ceiling_height}")
+    for i, m in enumerate(rm.wall_lengths):
+        print(f"  wall {i}         {m}")
+    print("\ngates")
+    for g in gates:
+        acc = (f"  accuracy {g['error_m'] * 100:+.1f} cm "
+               f"{'PASS' if g['accuracy_pass'] else 'FAIL'}"
+               if "error_m" in g else "  accuracy unscored (no ground truth)")
+        print(f"  {g['gate']:<18} precision ±{g['interval_half_width_m'] * 100:5.2f} cm "
+              f"{'PASS' if g['precision_pass'] else 'FAIL'}{acc}")
+
+    print(f"\nwrote  {jpath}\n       {spath}")
+    print(f"elapsed          {time.time() - t0:.1f}s")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="cozmo")
     sub = p.add_subparsers(dest="cmd", required=True)
+
+    r = sub.add_parser("run", help="full pipeline: capture in, contract out")
+    r.add_argument("capture")
+    r.add_argument("--out", default="out")
+    r.add_argument("--frames", type=int, default=120)
+    r.add_argument("--bootstrap", type=int, default=60)
+    r.add_argument("--sigma-step", dest="sigma_step", type=float, default=0.002)
+    r.add_argument("--name", default="room")
+    r.add_argument("--wall-draws", dest="wall_draws", type=int, default=40,
+                   help="bootstrap resamples for the room's intervals")
+    r.add_argument("--truth-walls", dest="truth_walls", default=None,
+                   help="two tape wall lengths in metres, comma separated, "
+                        "one per opposing pair")
+    r.add_argument("--truth-height", dest="truth_height", type=float, default=None,
+                   help="tape/laser ceiling height in metres, for gate scoring")
+    r.set_defaults(func=cmd_run)
 
     m = sub.add_parser("measure", help="measure a capture")
     m.add_argument("capture")

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="701" height="731" viewBox="0 0 701 731">
+<style>.wall{fill:#f4f6f7;stroke:#1b2226;stroke-width:5;stroke-linejoin:round}.dim{stroke:#d14a16;stroke-width:1.2}.tick{stroke:#d14a16;stroke-width:1.2}text{font-family:ui-monospace,Menlo,monospace;fill:#1b2226}.d{font-size:12px;fill:#a03608}.ci{font-size:9.5px;fill:#6e7c84}.t{font-size:15px;font-weight:600}.s{font-size:10.5px;fill:#6e7c84}</style>
+<rect width="701" height="731" fill="#ffffff"/>
+<text class="t" x="90" y="26">myroom</text>
+<text class="s" x="90" y="42">floor area 9.38 m² (±6 cm²) · ceiling 2.957 m ±2.1 cm</text>
+<polygon class="wall" points="113.1,641.2 610.6,617.3 587.5,136.0 90.0,159.9"/>
+<line class="dim" x1="113.1" y1="641.2" x2="610.6" y2="617.3" transform="translate(0.8,16.0)"/>
+<text class="d" x="363.3" y="659.2" text-anchor="middle">3.113 m</text>
+<text class="ci" x="363.3" y="671.2" text-anchor="middle">±2.1 cm</text>
+<line class="dim" x1="610.6" y1="617.3" x2="587.5" y2="136.0" transform="translate(16.0,-0.8)"/>
+<text class="d" x="629.0" y="375.2" text-anchor="middle">3.012 m</text>
+<text class="ci" x="629.0" y="387.2" text-anchor="middle">±1.7 cm</text>
+<line class="dim" x1="587.5" y1="136.0" x2="90.0" y2="159.9" transform="translate(-0.8,-16.0)"/>
+<text class="d" x="337.3" y="118.0" text-anchor="middle">3.113 m</text>
+<text class="ci" x="337.3" y="130.0" text-anchor="middle">±2.1 cm</text>
+<line class="dim" x1="90.0" y1="159.9" x2="113.1" y2="641.2" transform="translate(-16.0,0.8)"/>
+<text class="d" x="71.6" y="402.0" text-anchor="middle">3.012 m</text>
+<text class="ci" x="71.6" y="414.0" text-anchor="middle">±1.7 cm</text>
+</svg>
