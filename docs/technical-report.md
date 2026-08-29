@@ -19,27 +19,51 @@ project.
 
 ```mermaid
 flowchart TD
-    A["Polycam raw zip<br/>(LiDAR)"] --> D["ingest.lidar"]
-    B["video .mov"] -.-> E["ingest.video<br/>NOT BUILT"]
-    C["photo folders"] -.-> F["ingest.photos<br/>NOT BUILT"]
-    D --> G["PosedFrame<br/>rgb + depth + pose + provenance"]
-    E -.-> G
-    F -.-> G
-    G --> H["drift correction<br/>plane anchored"]
-    H --> I["wall plane detection"]
-    I --> J["room polygon<br/>area, perimeter, ceiling"]
-    J --> K["JSON contract<br/>+ SVG floor plan"]
-    style D fill:#d7f0e6,stroke:#0e6b60
-    style G fill:#d7f0e6,stroke:#0e6b60
-    style H fill:#d7f0e6,stroke:#0e6b60
-    style I fill:#d7f0e6,stroke:#0e6b60
-    style J fill:#d7f0e6,stroke:#0e6b60
-    style K fill:#d7f0e6,stroke:#0e6b60
-    style E fill:#f6dcd4,stroke:#a32222
-    style F fill:#f6dcd4,stroke:#a32222
+    A["Polycam raw zip<br/>LiDAR"] --> D["ingest.lidar"]
+    B["photo folder"] --> E["ingest.camera<br/>structure from motion"]
+    C["video .mov"] --> E
+    M["metric depth model<br/>Depth Anything V2"] -.-> E
+    D --> G["PosedFrame<br/>depth + pose + provenance"]
+    E --> G
+    G --> H["drift correction<br/>plane anchored, ablatable"]
+    H --> I["envelope surfaces<br/>floor and ceiling"]
+    H --> J["wall plane detection"]
+    I --> K["room<br/>polygon, area, height"]
+    J --> K
+    K --> N["openings<br/>holes in wall planes"]
+    K --> P["damage<br/>colour anomalies"]
+    K --> O["JSON contract<br/>+ SVG floor plan"]
+    N -.-> O
+    P -.-> O
+    classDef ok fill:#d7f0e6,stroke:#0e6b60,color:#123
+    classDef warn fill:#fdf0d5,stroke:#8a6009,color:#123
+    classDef bad fill:#f6dcd4,stroke:#a32222,color:#123
+    class A,D,G,H,I,J,K,O ok
+    class M,N warn
+    class B,C,E,P bad
 ```
 
-Green is built and running. Red is captured but not processed.
+**Green** ships and is validated. **Amber** is built and runs, but its output is
+reported as experimental rather than claimed. **Red** is built and runs but does
+not yet produce usable measurements.
+
+| box or arrow | what it does |
+|---|---|
+| **Polycam raw zip** | The LiDAR capture, exported with developer mode on: images, depth, confidence, intrinsics and two sets of poses. |
+| **photo folder / video** | The camera-only tiers, shot on the native Camera app because Polycam exports nothing usable without LiDAR. |
+| **ingest.lidar** | Unpacks the archive and joins `corrected_cameras` for pose with `cameras` for the sensor metadata the corrected files drop. |
+| **ingest.camera** | Recovers poses from images by matching features and chaining relative motion, since these tiers ship neither poses nor depth. |
+| **metric depth model** | Predicts absolute distance in metres from a single image, which is what supplies scale to a reconstruction that otherwise has none. Dotted because it informs the camera tiers rather than sitting in the data path. |
+| **PosedFrame** | The one representation all three tiers converge on, so the geometry below it is written once instead of three times. |
+| **drift correction** | Solves per-frame corrections against the floor and ceiling planes, tied through time; the correction strength sweeps to zero for the required ablation. |
+| **envelope surfaces** | Locates floor and ceiling at a tail quantile of the point cloud rather than its densest band, because clutter sits on floors and fittings hang below ceilings. |
+| **wall plane detection** | Recovers the room's own axes, then fits each wall as a plane to hundreds of thousands of points rather than measuring the spread of the cloud. |
+| **room** | Intersects the fitted walls into a polygon and derives area, perimeter and wall lengths, each with a bootstrapped interval. |
+| **openings** | Finds doors and windows as regions of a wall with no returns bounded by returns; amber because widths swing by up to a factor of two. |
+| **damage** | Flags colour anomalies against each surface's local appearance; red because it cannot separate a real gouge from wood grain. |
+| **JSON + SVG** | The output contract: every number with its interval and the provenance chain that produced it, plus a dimensioned plan. |
+| **solid arrow** | Data flows and the result is claimed. |
+| **dotted arrow** | Contributes, but its output is labelled experimental and excluded from the gates. |
 
 ### What comes out
 

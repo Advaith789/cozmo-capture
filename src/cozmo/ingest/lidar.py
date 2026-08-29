@@ -79,6 +79,19 @@ def _intrinsics(cam: dict, depth_shape: tuple[int, int]) -> np.ndarray:
     ])
 
 
+def _maybe_image(ar: "_Archive", stem: str) -> bytes | None:
+    """The keyframe's colour JPEG, kept for damage detection.
+
+    Held as bytes rather than decoded: most of the pipeline is geometry and
+    never looks at colour, so decoding every frame up front would cost time for
+    nothing.
+    """
+    try:
+        return ar.read(f"keyframes/images/{stem}.jpg")
+    except Exception:
+        return None
+
+
 def load(path: str | Path, max_frames: int | None = None) -> Capture:
     """Load a Polycam raw export.
 
@@ -135,10 +148,11 @@ def load(path: str | Path, max_frames: int | None = None) -> Capture:
             T_wc=_pose(cam),
             depth_source=DepthSource.MEASURED,
             pose_source=pose_source,
-            meta={k: raw_cam[k] for k in
-                  ("timestamp", "tracking_segment", "angular_velocity",
-                   "blur_score", "iso", "exposure_time", "thermal_state")
-                  if k in raw_cam},
+            meta={**{k: raw_cam[k] for k in
+                     ("timestamp", "tracking_segment", "angular_velocity",
+                      "blur_score", "iso", "exposure_time", "thermal_state")
+                     if k in raw_cam},
+                  "image_bytes": _maybe_image(ar, stem)},
         ))
 
     if not frames:
