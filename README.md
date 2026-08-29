@@ -14,21 +14,40 @@ native iOS Camera for video and photos. See
 
 ## Status
 
-Built through step 3 of the plan. The capture route is defined and the ingest
-tooling is tested; the pipeline itself is not written yet.
+Capture route verified across all three tiers. The Tier C pipeline runs end to
+end and produces its first measurement; tiers A and B ingest are not written.
 
 | Step | | |
 |---|---|---|
 | 1 | Repo scaffold, secrets ignored | done |
 | 2 | Export bake-off — verify what the export actually contains | Tier C done; A and B outstanding |
 | 3 | One-page capture protocol + device matrix | done, file contract verified |
-| 4 | Benchmark set + ground truth | not started |
+| 4 | Benchmark set + ground truth | blocked on a tape or laser |
+| — | Tier C pipeline: ingest → planes → ceiling height | **runs** |
 | 5 | Gates, then the fix loop | not started |
 | 6 | Head-to-head vs incumbent | not started |
 
 Measured so far: 95 keyframes/min, so the 700-frame pose-optimisation budget
 is 7.3 minutes of scanning. Raw ARKit poses drifted a median 5.3 cm and up to
 42 cm over a single 2.5-minute room scan.
+
+First pipeline output, on that scan:
+
+```
+ceiling height   2.9638 m [2.8524, 2.9796]  (±6.36 cm, n=60)
+gate ≤1.5 cm     FAIL
+```
+
+Reported as a failure because it is one. The estimate agrees with Polycam's
+independent mesh to 7 cm, which validates the ingest chain, but the interval is
+four times the gate. The cause is measured, not guessed: the fitted floor and
+ceiling planes are 8–9.5 cm thick, where a real floor is flat to a millimetre.
+That thickness is pose error smeared across pooled frames — the leading
+candidate for the fix loop.
+
+No accuracy claim is made. The interval above is precision. Whether 2.9638 m is
+*correct* needs tape or laser ground truth, which the benchmark step is
+waiting on.
 
 Nothing in this repo yet claims an accuracy number. The device matrix columns
 read *pending* on purpose — quoting an interval we have not measured is the
@@ -76,8 +95,9 @@ inherit the error silently.
 
 ## Architecture
 
-> Target design. Only `ingest`'s format work exists today; the rest is the
-> shape the next steps build into.
+> `ingest.lidar`, `geometry` (planes and height) and the CLI exist. `scale`,
+> `drift`, `rooms`, `openings`, `stitch`, `damage`, `uncertainty` and
+> `contract` are the shape the next steps build into.
 
 The three tiers differ only in how much they know. They converge on one
 intermediate representation as early as possible, so everything downstream is
@@ -157,11 +177,11 @@ shots in § 3.5 of the protocol exist to supply those edges.
 ### One command per capture
 
 ```sh
-python -m cozmo run captures/12elmst_lidar_20260901.zip --out out/   # not yet implemented
+PYTHONPATH=src .venv/bin/python -m cozmo measure myroom/8_28_2026.zip
 ```
 
-Tier is detected from the input shape, not passed in. Same command, same output
-contract, for all three.
+Tier is detected from the input shape, not passed in — Tier C runs today, A and
+B report that they are unimplemented rather than guessing.
 
 ---
 
@@ -173,6 +193,12 @@ docs/
   capture-bakeoff.md     export verification worksheet              [step 2]
 scripts/
   inspect_capture.py     read a raw export and report what it holds
+src/cozmo/
+  types.py               PosedFrame, Measurement, provenance enums
+  io/png.py              vectorised depth/confidence decode
+  ingest/lidar.py        Polycam raw -> Capture
+  geometry/height.py     floor/ceiling planes, frame-bootstrapped interval
+  __main__.py            the one command
 tests/
   fixtures.py            synthetic captures — no phone required
   test_inspect.py        21 tests, PNG filters + archive layout
