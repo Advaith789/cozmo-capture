@@ -26,9 +26,10 @@ judgement is a capture we did not specify.
 
 ## 1. Prepare the space — 2 minutes
 
-1. Turn on **every light**, including lamps and closet lights.
-2. **Close blinds and curtains.** Leave the lights on.
-   - *Bare windows blow out the exposure and the depth sensor reads straight through the glass. Covered glass is a surface; bare glass is a hole in the scan.*
+1. Turn on **every light**, including lamps and closet lights. Carry a lamp in from another room if one is short on light — a dim room is the most common cause of a bad capture, and it costs nothing to fix.
+2. **Blinds depend on the tier:**
+   - **Tier C (LiDAR): close them.** Bare glass is transparent to the depth sensor and blows out the exposure. Covered glass is a surface; bare glass is a hole in the scan.
+   - **Tiers A and B (camera only): open them, and capture in daylight.** There is no depth sensor to confuse, and daylight is the largest free improvement available to a camera-only tier. Just never point the camera straight into a window.
 3. Open every interior door fully, flat against the wall.
 4. Clear the floor line where you can — remove bags, shoes, cables.
 5. Move people and pets to a room you will scan last, or outside.

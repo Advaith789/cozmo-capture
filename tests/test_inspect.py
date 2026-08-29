@@ -225,16 +225,36 @@ class Reporting(unittest.TestCase):
             self.assertIn("as millimetres:", out)
             self.assertIn("% valid", out)
 
-    def test_heic_and_room_counts_are_flagged(self):
+    def test_room_counts_and_formats_are_reported(self):
+        """HEIC is a valid input, not a defect — but per-room counts are capped."""
         with tempfile.TemporaryDirectory() as tmp:
             root = fixtures.build_photo_set(
                 Path(tmp) / "photos",
                 rooms={"kitchen": 5, "hallway": 11},
                 heic_room="bedroom_1")
             out = self._run(root)
-            self.assertIn("HEIC/HEIF", out)
-            self.assertIn("outside the 2–8 per room range", out)
+            self.assertIn(".heic", out)
+            self.assertIn("brief allows 2–8 per room", out)
             self.assertIn("iPhone 17 Pro", out)
+            self.assertNotIn("no EXIF", out)
+
+    def test_underlit_photo_set_is_flagged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "photos"
+            (root / "dim").mkdir(parents=True)
+            for i in range(4):
+                (root / "dim" / f"IMG_{i}.jpg").write_bytes(
+                    fixtures.encode_jpeg_with_exif(iso=3200))
+            self.assertIn("Underlit", self._run(root))
+
+    def test_well_lit_photo_set_is_not_flagged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "photos"
+            (root / "bright").mkdir(parents=True)
+            for i in range(4):
+                (root / "bright" / f"IMG_{i}.jpg").write_bytes(
+                    fixtures.encode_jpeg_with_exif(iso=64))
+            self.assertNotIn("Underlit", self._run(root))
 
 
 if __name__ == "__main__":

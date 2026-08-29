@@ -141,6 +141,44 @@ intrinsics ÷ 4. Worth noting for damage detection, which wants pixels.
 and per-direction surface areas including `horizontalUpArea` 7.28 m². Useful as
 a cross-check against our own room measurements.
 
+## Tier A — result
+
+**21 stills, HEIC, 5712×4284 (24 MP), 53 MB. Transferred by cable + Image Capture.**
+
+```
+  EXIF recovered      21/21          ← the thing this run existed to test
+  Make / Model        Apple iPhone 17 Pro
+  FocalLength         6.765 mm  (24 mm equivalent)
+  ISO                 median 1000, range 640–1600
+  ExposureTime        21/21 slower than 1/60 s, longest 1/30
+```
+
+**HEIC, not JPEG — and that is the better outcome.** It is the camera's native
+format, so nothing re-encoded on the way out and EXIF came through whole. The
+protocol's "Most Compatible" step was written to guarantee readability, not
+fidelity; ingest now decodes HEIC directly (`_scan_tiff` — HEIC stores the same
+TIFF block without a JPEG marker to anchor on), so the conversion is
+unnecessary and we should stop asking for it.
+
+**21 exceeds the brief's cap of 2–8 stills per room.** Fine as a format check;
+the benchmark set has to subset down.
+
+**Still underlit.** ISO median 1000 is better than the LiDAR scan's pinned 3200,
+but every exposure ran slower than 1/60 s and the longest was 1/30 — handshake
+blur territory. The photo tier has no depth sensor to fall back on, so this
+costs geometry directly rather than merely costing tracking.
+
+## Tier B — result
+
+**1920×1080 HEVC (`hvc1`), 41.4 s, 1242 frames at 30.0 fps, 63 MB.**
+
+Nine tracks, not one: 1 video, 2 audio, 6 timed metadata. **Two of the metadata
+tracks carry exactly 1242 samples — frame-synced with the video.** Apple writes
+per-frame camera metadata there. Worth decoding before the video tier resorts
+to recovering motion from pixels alone; it may hand us rotation for free.
+
+Shot at 30 fps rather than the 60 the protocol asks for in dim rooms.
+
 ## Field observations
 
 **Export is slow and it crashed.** A 2.5-minute scan took roughly 20–25 minutes

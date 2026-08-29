@@ -151,6 +151,7 @@ EXIF_TAGS = {
     0x010F: "Make",
     0x0110: "Model",
     0x829A: "ExposureTime",
+    0x8827: "ISOSpeedRatings",
     0x920A: "FocalLength",
     0xA405: "FocalLengthIn35mmFilm",
     0xA002: "PixelXDimension",
@@ -159,9 +160,14 @@ EXIF_TAGS = {
 
 
 def read_exif(data: bytes) -> dict:
-    """Minimal EXIF reader: enough to confirm focal length survived transfer."""
+    """Minimal EXIF reader: enough to confirm focal length survived transfer.
+
+    Handles JPEG (EXIF in an APP1 segment) and HEIC, where the same TIFF block
+    is stored as a bare item with no JPEG marker to anchor on — there we scan
+    for a TIFF header and accept the first one that yields fields we know.
+    """
     if data[:2] != b"\xff\xd8":
-        return {}
+        return _scan_tiff(data)
     pos = 2
     while pos < len(data) - 4:
         if data[pos] != 0xFF:
@@ -172,6 +178,21 @@ def read_exif(data: bytes) -> dict:
         if marker == 0xDA:  # start of scan; no more metadata past here
             break
         pos += 2 + seg_len
+    return {}
+
+
+def _scan_tiff(data: bytes, limit: int = 1 << 17) -> dict:
+    """Find an embedded TIFF block by signature. Used for HEIC/HEIF."""
+    for sig in (b"II*\x00", b"MM\x00*"):
+        pos = 0
+        while True:
+            i = data.find(sig, pos)
+            if i < 0:
+                break
+            got = _parse_tiff(data[i:i + limit])
+            if got.get("FocalLength") or got.get("Model"):
+                return got
+            pos = i + 1
     return {}
 
 
@@ -414,8 +435,27 @@ def report_session(src: Source, cams: list[str], corrected: list[str]) -> None:
     spins = sorted(c["angular_velocity"] for c in raw.values()
                    if "angular_velocity" in c)
     if spins:
+        fast = sum(1 for s in spins if s > 1.0)
         print(f"    angular velocity:     median {statistics.median(spins):.2f}  "
               f"max {spins[-1]:.2f} rad/s")
+        if fast / len(spins) > 0.15:
+            print(f"    [!] {100 * fast / len(spins):.0f}% of frames panned faster than "
+                  f"1 rad/s — the protocol asks for slower sweeps.")
+
+    # ISO pinned at the ceiling means the room was too dark. LiDAR depth is
+    # unaffected — it is an active sensor — but the camera drives tracking, and
+    # noisy frames are where drift comes from. On tiers A and B, which have no
+    # depth sensor at all, this is fatal rather than merely costly.
+    isos = sorted(c["iso"] for c in raw.values() if "iso" in c)
+    if isos:
+        med = statistics.median(isos)
+        print(f"    ISO:                  median {med:.0f}  max {isos[-1]:.0f}")
+        if med >= 1600:
+            pinned = sum(1 for i in isos if i >= isos[-1])
+            print(f"    [!] Room was underlit — ISO sat at {isos[-1]:.0f} on "
+                  f"{100 * pinned / len(isos):.0f}% of frames.")
+            print(f"        Turn on every light before re-capturing. Noisy frames")
+            print(f"        weaken tracking, which is where drift comes from.")
 
     # How far did global optimisation move each camera? This is the drift that
     # accumulated along the walk, and the floor our own correction has to beat.
@@ -450,49 +490,191 @@ def report_photos(src: Source, groups: dict[str, list[str]]) -> None:
     print("PHOTO SET")
     print("=" * 74 + "\n")
 
-    rooms = {d: [f for f in fs if Path(f).suffix.lower() in IMAGE_EXT]
+    rooms = {d: sorted(f for f in fs if Path(f).suffix.lower() in IMAGE_EXT)
              for d, fs in groups.items()}
     rooms = {d: fs for d, fs in rooms.items() if fs}
+    if not rooms:
+        print("  No images found.")
+        return
 
-    print(f"  {len(rooms)} folder(s), {sum(len(f) for f in rooms.values())} images\n")
+    total = sum(len(f) for f in rooms.values())
+    print(f"  {len(rooms)} folder(s), {total} images\n")
     for d in sorted(rooms):
         fs = rooms[d]
-        flag = "" if 2 <= len(fs) <= 8 else "   [!] outside the 2–8 per room range"
+        # The brief caps the photo tier at 2-8 stills per room.
+        flag = "" if 2 <= len(fs) <= 8 else f"   [!] brief allows 2–8 per room"
         print(f"    {(d if d != '.' else '(root)'):<24} {len(fs):>3} images{flag}")
 
-    heic = [f for fs in rooms.values() for f in fs
-            if Path(f).suffix.lower() in {".heic", ".heif"}]
-    if heic:
-        print(f"\n  [!] {len(heic)} HEIC/HEIF files. Our contract says .jpeg —")
-        print(f"      set Camera → Formats → Most Compatible, or convert on ingest.")
+    fmts = Counter(Path(f).suffix.lower() for fs in rooms.values() for f in fs)
+    print(f"\n  formats: {dict(fmts)}")
+    if fmts.get(".heic", 0) or fmts.get(".heif", 0):
+        print("    HEIC is the camera's native format and keeps full EXIF — it is")
+        print("    the better input, provided ingest decodes it. Only convert if")
+        print("    something downstream cannot read it.")
 
-    sample = next((f for fs in rooms.values() for f in fs
-                   if Path(f).suffix.lower() in {".jpg", ".jpeg"}), None)
-    if not sample:
-        return
+    # EXIF across the whole set: intrinsics and the lighting check.
+    every = [f for fs in rooms.values() for f in fs]
+    exifs = []
+    for f in every:
+        try:
+            e = read_exif(src.read(f))
+        except Exception:
+            e = {}
+        if e:
+            exifs.append(e)
 
-    print(f"\n  EXIF  ({Path(sample).name})")
-    exif = read_exif(src.read(sample))
-    if not exif:
-        print("    [!] no EXIF block — stripped in transfer. Set Settings → Photos →")
-        print("        Transfer to Mac or PC → Keep Originals, and re-import.")
+    print(f"\n  EXIF recovered: {len(exifs)}/{len(every)}")
+    if not exifs:
+        print("    [!] no EXIF — stripped in transfer. Set Settings → Photos →")
+        print("        Transfer to Mac or PC → Keep Originals and re-import.")
         print("        Without focal length the photo tier loses its intrinsics.")
         return
-    for k in sorted(exif):
-        print(f"    {k:<22} {exif[k]}")
-    if "FocalLength" not in exif and "FocalLengthIn35mmFilm" not in exif:
+
+    e = exifs[0]
+    for k in ("Make", "Model", "FocalLength", "FocalLengthIn35mmFilm",
+              "PixelXDimension", "PixelYDimension"):
+        if k in e:
+            print(f"    {k:<24} {e[k]}")
+
+    if not any("FocalLength" in x or "FocalLengthIn35mmFilm" in x for x in exifs):
         print("    [!] no focal length — cannot derive intrinsics from these files.")
+
+    isos = sorted(x["ISOSpeedRatings"] for x in exifs if "ISOSpeedRatings" in x)
+    if isos:
+        med = statistics.median(isos)
+        print(f"\n  ISO: median {med:.0f}  range {isos[0]}–{isos[-1]}")
+        if med >= 800:
+            print(f"    [!] Underlit. The photo tier has no depth sensor to fall back")
+            print(f"        on, so noise here costs geometry directly. Capture in")
+            print(f"        daylight with the blinds open, or add light.")
+
+    exps = sorted(x["ExposureTime"] for x in exifs if "ExposureTime" in x)
+    if exps and exps[-1] > 1 / 60:
+        slow = sum(1 for x in exps if x > 1 / 60)
+        print(f"  Exposure: {slow}/{len(exps)} slower than 1/60 s "
+              f"(longest 1/{1 / exps[-1]:.0f}) — handshake blur risk.")
+
+
+def _boxes(buf: bytes, start: int, end: int) -> list[tuple[str, int, int]]:
+    """Children of one ISO-BMFF box as (type, body_start, box_end)."""
+    out, p = [], start
+    while p + 8 <= end:
+        size, typ = struct.unpack(">I4s", buf[p:p + 8])
+        if size == 1:
+            size = struct.unpack(">Q", buf[p + 8:p + 16])[0]
+            body = p + 16
+        else:
+            body = p + 8
+        if size < 8:
+            break
+        out.append((typ.decode("latin1", "replace"), body, p + size))
+        p += size
+    return out
+
+
+def _box(buf: bytes, parent: tuple[int, int], name: str) -> tuple[int, int] | None:
+    for t, b, e in _boxes(buf, *parent):
+        if t == name:
+            return (b, e)
+    return None
+
+
+def mov_tracks(buf: bytes) -> list[dict]:
+    """Every track in a .mov/.mp4, with codec, duration and sample rate.
+
+    An iPhone clip is not one video stream — it carries audio and several timed
+    metadata tracks alongside it, and we want to know which is which before the
+    video tier assumes anything.
+    """
+    moov = _box(buf, (0, len(buf)), "moov")
+    if not moov:
+        return []
+
+    tracks = []
+    for t, b, e in _boxes(buf, *moov):
+        if t != "trak":
+            continue
+        mdia = _box(buf, (b, e), "mdia")
+        if not mdia:
+            continue
+        info: dict = {"kind": "?", "codec": "?", "samples": 0,
+                      "seconds": 0.0, "width": None, "height": None}
+
+        hdlr = _box(buf, mdia, "hdlr")
+        if hdlr:
+            info["kind"] = buf[hdlr[0] + 8:hdlr[0] + 12].decode("latin1", "replace")
+
+        mdhd = _box(buf, mdia, "mdhd")
+        if mdhd:
+            ver = buf[mdhd[0]]
+            scale, dur = (struct.unpack(">II", buf[mdhd[0] + 12:mdhd[0] + 20])
+                          if ver == 0 else
+                          struct.unpack(">IQ", buf[mdhd[0] + 20:mdhd[0] + 32]))
+            info["seconds"] = dur / scale if scale else 0.0
+
+        tkhd = _box(buf, (b, e), "tkhd")
+        if tkhd and info["kind"] == "vide":
+            ver = buf[tkhd[0]]
+            off = tkhd[0] + 4 + (20 if ver == 0 else 32) + 8 + 2 + 2 + 2 + 2 + 36
+            w, h = struct.unpack(">II", buf[off:off + 8])
+            info["width"], info["height"] = w >> 16, h >> 16
+
+        minf = _box(buf, mdia, "minf")
+        stbl = _box(buf, minf, "stbl") if minf else None
+        if stbl:
+            stsd = _box(buf, stbl, "stsd")
+            if stsd:
+                info["codec"] = buf[stsd[0] + 12:stsd[0] + 16].decode("latin1", "replace")
+            stts = _box(buf, stbl, "stts")
+            if stts:
+                n = struct.unpack(">I", buf[stts[0] + 4:stts[0] + 8])[0]
+                info["samples"] = sum(
+                    struct.unpack(">II", buf[stts[0] + 8 + i * 8:stts[0] + 16 + i * 8])[0]
+                    for i in range(n))
+        tracks.append(info)
+    return tracks
 
 
 def report_video(path: Path) -> None:
     print("=" * 74)
     print("VIDEO")
     print("=" * 74 + "\n")
-    size = path.stat().st_size
-    print(f"  {path.name}  ({human(size)})")
-    print("\n  No pose or depth track — this tier is frames only, as expected.")
-    print("  Resolution and frame rate need ffprobe; note them from the Photos app")
-    print("  Info panel for now and record them in the bake-off doc.")
+    buf = path.read_bytes()
+    print(f"  {path.name}  ({human(len(buf))})")
+
+    tracks = mov_tracks(buf)
+    if not tracks:
+        print("  [!] no moov box — file may be truncated or still copying.")
+        return
+
+    video = [t for t in tracks if t["kind"] == "vide"]
+    if not video:
+        print("  [!] no video track.")
+        return
+
+    v = video[0]
+    fps = v["samples"] / v["seconds"] if v["seconds"] else 0
+    print(f"\n  resolution   {v['width']}×{v['height']}")
+    print(f"  codec        {v['codec']}")
+    print(f"  duration     {v['seconds']:.1f} s")
+    print(f"  frames       {v['samples']}  ({fps:.1f} fps)")
+
+    if fps < 45:
+        print(f"    note: 30 fps. In a dim room 60 fps halves the exposure per")
+        print(f"    frame and cuts motion blur, which matters more than resolution.")
+
+    others = Counter(t["kind"] for t in tracks if t["kind"] != "vide")
+    if others:
+        print(f"\n  OTHER TRACKS  {dict(others)}")
+        synced = [t for t in tracks if t["kind"] == "meta" and t["samples"] > 1
+                  and abs(t["samples"] - v["samples"]) <= 2]
+        if synced:
+            print(f"    {len(synced)} metadata track(s) run frame-synced with the video")
+            print(f"    ({v['samples']} samples each). Apple writes per-frame camera")
+            print(f"    metadata here — worth decoding before the video tier falls")
+            print(f"    back to recovering motion from pixels alone.")
+
+    print(f"\n  No depth track, as expected — this tier is frames only.")
 
 
 def main() -> int:

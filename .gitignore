@@ -11,10 +11,15 @@ venv/
 .pytest_cache/
 .ipynb_checkpoints/
 
-# large capture data (tracked via manifest + script, not in git)
+# large capture data (delivered as a separate bundle, not in git)
 data/raw/
 data/captures/
+myroom/
+captures/
 *.zip
+*.heic
+*.HEIC
+*.heif
 *.mp4
 *.mov
 *.glb

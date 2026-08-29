@@ -74,7 +74,8 @@ def encode_png_gray(width: int, height: int, bit_depth: int,
 
 def encode_jpeg_with_exif(focal_mm: float = 6.765, make: str = "Apple",
                           model: str = "iPhone 17 Pro",
-                          px: int = 8064, py: int = 6048) -> bytes:
+                          px: int = 8064, py: int = 6048,
+                          iso: int = 100) -> bytes:
     """Minimal JPEG carrying the EXIF fields the photo tier depends on."""
     def entry(tag: int, typ: int, count: int, val: bytes) -> bytes:
         return struct.pack("<HHI", tag, typ, count) + val
@@ -83,7 +84,7 @@ def encode_jpeg_with_exif(focal_mm: float = 6.765, make: str = "Apple",
     make_off = 50
     model_off = make_off + len(make_b)
     exif_off = model_off + len(model_b)
-    focal_off = exif_off + 2 + 4 * 12 + 4
+    focal_off = exif_off + 2 + 5 * 12 + 4
 
     ifd0 = struct.pack("<H", 3) + b"".join([
         entry(0x010F, 2, len(make_b), struct.pack("<I", make_off)),
@@ -91,7 +92,8 @@ def encode_jpeg_with_exif(focal_mm: float = 6.765, make: str = "Apple",
         entry(0x8769, 4, 1, struct.pack("<I", exif_off)),
     ]) + struct.pack("<I", 0)
 
-    exif = struct.pack("<H", 4) + b"".join([
+    exif = struct.pack("<H", 5) + b"".join([
+        entry(0x8827, 3, 1, struct.pack("<H", iso) + b"\x00\x00"),
         entry(0x920A, 5, 1, struct.pack("<I", focal_off)),
         entry(0xA405, 3, 1, struct.pack("<H", 28) + b"\x00\x00"),
         entry(0xA002, 4, 1, struct.pack("<I", px)),
