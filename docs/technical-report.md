@@ -1,10 +1,11 @@
 # Technical report
 
-Six pages, as specified. Detail that does not fit lives in the code comments and
-in [benchmark-report.md](benchmark-report.md); this is the argument, not the log.
+Three pages. The cap is six and the brief says length trades against
+engineering, so this is the argument only; the numbers behind it are in
+[benchmark-report.md](benchmark-report.md), regenerable with
+`bash scripts/benchmark.sh`.
 
-Route 2, stock tooling: Polycam for LiDAR, the native Camera for photos and
-video. Every number below is regenerable with `bash scripts/benchmark.sh`.
+Route 2, stock tooling: Polycam for LiDAR, the native Camera for photos and video.
 
 ## 1. Architecture
 
@@ -29,194 +30,152 @@ flowchart TD
     class D bad
 ```
 
-**Green** ships and is validated. **Amber** runs but its output is reported as
-experimental rather than claimed. **Red** is opt-in and claimed against nothing.
+**Green** ships. **Amber** runs but is reported as experimental. **Red** is
+opt-in and claimed against nothing.
 
-All three tiers converge on one representation, `PosedFrame`, so the geometry
-below it is written once. Every measurement carries `lo`, `hi` and a provenance
-chain naming its depth source, pose source, scale source, method and how its
-interval was derived. A number whose interval came from an assumption says so.
+All three tiers converge on `PosedFrame`, so the geometry below it is written
+once. The order matters: **surfaces first**, because everything needs to know
+which way is down; **spaces second**, before any wall is fitted, or a two room
+capture fits one rectangle across both; **walls last, per room**, so a surface
+next door can never be a candidate for this one. Openings and damage hang off
+the finished room and cannot move a dimension.
 
-Three decisions worth defending:
+Every measurement carries `lo`, `hi` and a provenance chain naming its depth,
+pose and scale sources, its method, and how its interval was derived. An
+interval that came from an assumption rather than a resample says so.
 
-**Bootstrap over frames, never over points.** Samples inside one frame share
-that frame's pose error, so resampling points reports a fraction of a millimetre
-for data that disagrees by centimetres. Resampling frames carries the pose
-disagreement that actually dominates.
-
-**Detection is decided once; only positions resample.** A draw that mistakes a
-wardrobe for a wall does not tell us how precisely a wall is located. Letting
-detection vary gave intervals of about a metre.
-
-**Surfaces at a tail quantile, not the densest band.** Clutter sits on floors
-and fittings hang below ceilings, so the contamination is one-sided and the mode
-is biased. The envelope estimator moved the ceiling from -3.4 cm to -0.2 cm.
+Three decisions worth defending. **Bootstrap over frames, never over points**:
+samples in one frame share that frame's pose error, so resampling points reports
+a fraction of a millimetre for data disagreeing by centimetres. **Detection
+decided once, positions resampled**: a draw mistaking a wardrobe for a wall says
+nothing about where a wall is, and letting detection vary gave intervals of a
+metre. **Surfaces at a tail quantile, not the densest band**: clutter sits on
+floors and fittings hang below ceilings, so contamination is one-sided; this
+moved the ceiling from -3.4 cm to -0.2 cm.
 
 ## 2. Tier design and device matrix
 
-| tier | hardware | data in | scale from | measured accuracy |
+| tier | hardware | data in | scale | measured accuracy |
 |---|---|---|---|---|
-| **C, LiDAR** | any Pro iPhone, 12 Pro up | depth, poses, intrinsics | sensor | **walls +0.2 to +1.1 cm, ceiling -0.2 cm** |
-| C fallback | as above, Developer Mode missed | mesh only (OBJ/PLY) | sensor | walls +0.4 / +1.1 cm, ceiling -0.2 cm; intervals assumed |
-| **B, video** | iPhone 15 and newer | frames | learned model | poor: -32.7% and +29.1% against a ±3% gate |
-| **A, photos** | any iPhone | frames | learned model | -4.8% to -22.1%; 2 of 4 inside ±8% |
+| **C, LiDAR** | any Pro iPhone | depth, poses, intrinsics | sensor | **walls +0.2 to +1.1 cm, ceiling -0.2 cm** |
+| C fallback | Developer Mode missed | mesh only | sensor | walls +0.4 / +1.1 cm; intervals assumed |
+| **B, video** | iPhone 15+ | frames | learned | -32.7% and +29.1% against ±3% |
+| **A, photos** | any iPhone | frames | learned | -4.8% to -22.1%; 2 of 4 inside ±8% |
 
-Tier C is the product. Tiers A and B run, are scored, and are not claimed.
+Tier C is the product. A and B run, are scored, and are not claimed.
 
-**Why classical reconstruction is the wrong tool here, tested not assumed.**
-COLMAP registered **4 of 29 photographs** and 27 of 70 video frames. A bedroom
-wall is large, flat, blank and dim, and feature matching needs texture. Tiers A
-and B therefore use MASt3R, a learned multi-view model run locally and
-disclosed, which regresses geometry instead of matching features. It
-reconstructs where COLMAP cannot: camera height comes out at **1.54 m**, where a
-phone is held, and the camera path spans 3.07 x 2.86 m in a 3 m room.
+Classical reconstruction was tested, not assumed: **COLMAP registered 4
+photographs of 29**. A bedroom wall is flat, blank and dim, and matching needs
+texture. So A and B use MASt3R, a learned model run locally and disclosed. Three
+fixes made it work, and the first was most of it:
 
-Three fixes made it work at all, and the first was most of the problem:
+- **The aligner discarded metric scale.** dust3r normalises pairwise scales so
+  their product is one, which throws away what the metric checkpoint provides.
+  Off: **-50.7%**. On: **-8.1%**.
+- **Even sampling paired unrelated images.** The folder held two sessions an
+  hour apart. Frames now come from one burst, spanning the sweep, stride capped.
+- **The estimator did not match the data.** A mode finder locks onto the floor
+  and the bed, because **people do not photograph ceilings**: the ceiling is
+  2.7% of the points. It reported 1.79 m for a 2.97 m room.
 
-- **The aligner was discarding metric scale.** dust3r's global aligner
-  normalises pairwise scales so their product is one, which is right for a
-  scale-free reconstruction and throws away exactly what the metric checkpoint
-  provides. Disabling it moved one room from **-50.7% to -8.1%** on identical
-  images.
-- **Even sampling across a folder paired unrelated images.** The folder held two
-  sessions an hour apart. Frames now come from one burst, found by timestamp,
-  spanning the whole sweep with the stride capped so neighbours still overlap.
-- **The estimator did not match the data.** Both tiers used a mode finder, which
-  in a photo cloud locks onto the floor and the bed, because **people do not
-  photograph ceilings**: the ceiling is 2.7% of the points. It measured the bed
-  and reported 1.79 m for a 2.97 m room.
+Two independent sanity checks pass: camera height comes out at **1.54 m**, and
+the top 1% of points span **4.6 cm**, a ceiling plane rather than noise.
 
-The residual is scale, not estimation, and it is reported rather than corrected.
+## 3. Drift handling and the ablation
 
-## 3. Drift handling and the required ablation
+Median pose correction is **0.9 and 1.1 cm** on the two compliant captures and
+**5.3 cm** on the non-compliant one. `cozmo check` reports it in under a second,
+so a bad capture is caught while the operator is still in the room. Drift was a
+protocol failure, not an algorithmic one.
 
-ARKit's optimiser already moves cameras; we measure how far, because that single
-number separates a good capture from a bad one. Median correction is **0.9 cm**
-on the capture that followed the protocol and **5.3 cm** on the one that did
-not, and `cozmo check` reports it in under a second so a bad capture is caught
-while the operator is still in the room.
+Per-frame corrections are then solved against the floor and ceiling planes with
+a temporal smoothness prior. The ablation is the `--sigma-step` sweep: the
+weight is `1/sigma_step`, so zero ties every correction together, and a constant
+correction is none.
 
-On top of that, per-frame corrections are solved against the floor and ceiling
-planes with a temporal smoothness prior. **The ablation the gate requires is the
-`--sigma-step` sweep**, which is a limit rather than a separate code path: the
-smoothness weight is `1/sigma_step`, so zero ties every consecutive correction
-together, and a constant correction is no correction at all.
-
-| `--sigma-step` | ceiling height | |
+| `--sigma-step` | ceiling | |
 |---|---|---|
-| **0** | 2.9255 m | correction **off**, the uncorrected case |
-| 0.0005 | 2.9231 m | |
+| **0** | 2.9255 m | correction **off** |
 | 0.002 | 2.9253 m | shipped default |
-| 0.01 | 2.9332 m | correction most permissive |
+| 0.01 | 2.9332 m | most permissive |
 
-Zero used to raise `ZeroDivisionError`, so the documented ablation did not
-actually run. It is now the limit it always claimed to be, and three tests pin
-it: that it solves, that its per-frame corrections come out constant, and that
-letting the correction work brings the height closer to truth on a capture whose
-floor and ceiling are seen over different parts of the walk. A common drift
-cancels in the difference, which is why the correction earns nothing on a
-fixture where both surfaces drift together.
-
-Drift turned out to be a **protocol** failure rather than an algorithmic one.
-The 5.3 cm capture was a single fast sweep; walking the perimeter slowly with
-pauses at corners brought it to 0.9 cm. That finding is why section 3 of the
-capture protocol counts steps out loud.
+Zero used to raise `ZeroDivisionError`, so the documented ablation never ran.
+Three tests now pin it.
 
 ## 4. Error budget
-
-Where the error in a Tier C wall actually comes from, largest first:
 
 | source | contribution | evidence |
 |---|---|---|
 | ground truth (the tape) | **±3.5 cm** | ten readings of one ceiling span 6.9 cm |
-| capture compliance | ±2.5 cm | 5.3 cm vs 0.9 cm drift between two scans of one room |
+| capture compliance | ±2.5 cm | 5.3 vs 0.9 cm drift between two scans |
 | wall band placement | ±1.0 cm | raising the band moved a wall +11.8 to +1.0 cm |
 | plane fit residual | ±0.3 cm | TLS residual, reported per wall |
-| sensor noise | ±0.06 cm | 0.55 cm per sample, averaged over ~10^5 points |
+| sensor noise | ±0.06 cm | 0.55 cm per sample over ~10^5 points |
 
-**The instrument measuring us is the largest term.** Our two captures of
-identical rooms agree on ceiling height to 0.5 cm; one tape measuring one
-ceiling twice disagrees with itself by 2.0 cm. Every accuracy figure in this
-submission is bounded by that, not by the pipeline.
+**The instrument measuring us is the largest term.** Two compliant captures of
+one room agree on walls to **0.07 cm**; one tape measuring one ceiling twice
+disagrees with itself by 2.0 cm.
 
-Synthetic validation separates our error from the ruler's. On a ray-cast room
-with exact truth: **walls -0.4 cm, ceiling exact**, invariant to yaw from 0 to
-63 degrees, walls surviving 10 cm of depth noise. Two known limits fell out:
-ceiling error tracks about twice the depth noise, because a tail quantile pushes
-both surfaces outward, and ceiling height needs about **ten views**, failing by
-1.5 m at six. 69 tests, no phone required.
+Synthetic ray-cast rooms separate our error from the ruler's: **walls -0.4 cm,
+ceiling exact**, invariant to yaw 0 to 63 degrees, walls surviving 10 cm of
+depth noise. Two limits fell out: ceiling error tracks about twice the depth
+noise, and ceiling height needs about **ten views**, failing by 1.5 m at six.
+72 tests, no phone required.
 
 ## 5. Calibration analysis
 
-Calibration is scored at every tier, and confident garbage caps the score, so
-every interval is derived from something measured.
+Calibration is scored at every tier and confident garbage caps the score, so
+every interval derives from something measured.
 
-- **Tier C** intervals are a 95% bootstrap over frames, recentred on the value
-  they belong to. That recentring was a real defect: the value comes from wall
-  detection and the draws from refits of it, two estimators of the same wall
-  differing by up to 2.5 cm, and one room published an interval that contained
-  neither its own estimate nor the tape.
-- **Tiers A and B** propagate the scale prior, ±18%, set from the error actually
-  observed. This too was broken: the propagation re-fitted walls on a scaled
-  cloud while looking within 6 cm of an unscaled offset, so every draw failed
-  silently and the tiers reported a fixed ±2 cm fallback on measurements whose
-  real error is 18 cm. Scaling is a similarity, so offsets scale exactly.
-- **The mesh fallback** cannot resample anything, so its intervals are assumed
-  at ±2.9 cm and fail the precision gate while passing accuracy. It says so.
+**Tier C** is a 95% bootstrap over frames, recentred on the value it belongs to.
+That recentring fixed a real defect: value from detection, draws from refits,
+differing by up to 2.5 cm, and one room published an interval containing neither
+its estimate nor the tape. **Tiers A and B** propagate a ±18% scale prior set
+from observed error; this was also broken, re-fitting walls on a scaled cloud
+while matching within 6 cm of an unscaled offset, so every draw failed silently
+and the tiers reported ±2 cm on measurements whose real error is 18 cm. **The
+mesh fallback** cannot resample, so its ±2.9 cm intervals are assumed and fail
+precision while passing accuracy.
 
-Calibration outcome across the nine gates scored against tape in three rooms:
-**precision passes 7, accuracy passes 7.** Interval coverage is checked
-mechanically: all ten shipped artifacts contain their own estimates.
+Outcome across twelve gates scored against tape: **precision 10, accuracy 9**.
+All eleven shipped artifacts contain their own estimates, checked mechanically.
 
 ## 6. The fix loop
 
-Declared worst gate, root cause, prediction and result are in
-[fix-loop.md](fix-loop.md) with both runs regenerable. In summary: the worst
-gate was wall length, failing at **16.7 cm** disagreement between two captures
-of physically identical rooms. Root cause was not accuracy in general but plane
-selection on one axis: the wall band sampled low enough to pick up furniture and
-the points spraying through an open doorway. The fix raised the band. That wall
-pair now agrees to **1.2 cm and passes**, and the cross-room check that found it
-needs no ground truth at all, which is why it found something a tape never
-would.
+Declared worst gate: repeatability, wall pair B, **16.7 cm** between two captures
+of physically identical rooms. Root cause was plane selection, not accuracy: the
+wall band sampled low enough to catch furniture and points through an open
+doorway. Shipped as a raised band plus room segmentation. That pair now reads
+**0.07 cm and passes**. Full story, including which half the code earned and
+which half a compliant capture earned, in [fix-loop.md](fix-loop.md).
 
 ## 7. Known failure modes
 
-**Tiers A and B are not reliable.** Two of six captures clear ±8%, median
-absolute error 15.9%, and we cannot predict which we will get. Video is worse
-than photographs on every comparison available. **The photo-tier whole-property
-stitch does not exist**, because only one photo capture recovers two opposing
-wall pairs, and that row of the brief is a fail.
+**Tiers A and B are not reliable**: two of six inside their gate, median error
+15.9%, unpredictable. **The photo-tier whole-property stitch does not exist**,
+because only one photo capture recovers two opposing wall pairs. That row is a
+fail.
 
-**Opening widths are not claimed.** Detection is ray traced, which is what
-separates a doorway from a wardrobe standing against a wall, and it reaches
-0.8 cm mean error on synthetic truth against a 2 cm gate. On a real capture it measures
-the clear opening the sensor saw through, 0.587 m, against a 0.958 m frame, and
-that gap is now explained rather than guessed at. Of the returns in the doorway
-at door height, 1.2% lie on the wall plane, so the door was open; 48.8% lie in
-front of it, so something stood between the sensor and the opening. Lowering the
-see-through threshold does not recover the missing width, which places the limit
-on the capture rather than the setting.
+**Opening widths are not claimed.** Ray tracing separates a doorway from a
+wardrobe and reaches 0.8 cm on synthetic truth, but on my room it reads 0.587 m
+against a 0.958 m frame. Measured, not guessed: 1.2% of returns in that doorway
+lie on the wall plane, so the door was open; 48.8% lie in front of it, so
+something occluded the opening.
 
-**Damage detection over-fires**: 79 regions on a clean control room. It runs
-behind `--damage`, off by default, claimed against nothing.
+**Damage over-fires**: 79 regions on a clean control room. Opt-in, claimed
+against nothing.
 
-**Mirrors, glass, wet-look surfaces and low light** are handled by reporting
-rather than by guessing. A time-of-flight sensor loses confidence on exactly
-those surfaces, so sustained low-confidence regions are raised as
-`concealed_conditions` with the rule that fired and the area affected: my room
-reports 19% of its scanned surface as lowest-confidence, about 10.6 m². Every
-benchmark room was captured under domestic lighting, two of them at ISO 3200,
-and the protocol's first instruction is to turn every light on.
+**Mirrors, glass, wet-look surfaces and low light** are reported rather than
+guessed. Sustained low-confidence regions become `concealed_conditions` with the
+rule that fired: my room flags 19% of scanned surface, about 10.6 m².
 
-**The multi-room stitch has no ground truth.** It splits a capture into rooms
-and measures a doorway at 0.873 m, and on synthetic truth reaches 1.0 cm, but no
-tape has touched a real room boundary.
-
-**A single room seen from too few angles is declined, not guessed.** Regions
-that cannot fit two opposing walls are reported as unmeasurable, and a photo
-reconstruction whose walls do not enclose the camera positions is discarded: on
-one burst the walls came back at 1.16 and 1.88 m while the camera path alone
-spanned 1.2 m, which is impossible.
+**The multi-room stitch has no ground truth**, and **ceiling spread still fails**
+at 1.49 cm against 1 cm between two compliant captures.
 
 ![Example floor plan](figures/example-plan.svg)
+
+---
+
+Design decisions are defended one by one in the
+[README](../README.md#defending-this-live), kept there because this document has
+a page cap and that list is a crib rather than an argument.

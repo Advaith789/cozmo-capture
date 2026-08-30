@@ -264,6 +264,35 @@ scripts/
 
 ---
 
+## Defending this live
+
+Every design decision, with the number that justifies it. Tools closed.
+
+| if asked | the answer |
+|---|---|
+| Why Route 2 and not your own app? | A stock protocol is what a non-engineer can follow on the day, and the brief says the page is followed literally. The engineering went into the pipeline instead of an install flow. |
+| Why does the ceiling use a tail quantile? | Clutter sits on floors and fittings hang below ceilings, so the contamination is one-sided and the densest band is biased. It moved the ceiling from **-3.4 cm to -0.2 cm**. |
+| Why bootstrap over frames? | Samples inside one frame share that frame's pose error. Resampling points reports a fraction of a millimetre for data that disagrees by centimetres. |
+| Why not resample the wall detection too? | A draw that mistakes a wardrobe for a wall says nothing about how precisely a wall sits. Letting detection vary gave intervals of about **a metre**. |
+| Why recentre the intervals? | The value comes from detection, the draws from refits of it. They differ by up to 2.5 cm, and one room published an interval containing neither its own estimate nor the tape. |
+| Why split rooms before fitting walls? | A two room capture otherwise fits one rectangle across both. The hallway used to report **28.08 m²** as one room. |
+| Why must a split be walled to the ceiling? | Furniture leaves a door-width gap in a floor too. Splitting on the floor alone turned one bedroom into three fragments that measured nothing. |
+| Why ray trace openings? | A doorway and a wardrobe both stop the sensor reaching the wall. Only the ray tells them apart. **0.8 cm** mean on synthetic truth. |
+| Why is the door 0.587 m and the frame 0.958 m? | 1.2% of returns in that doorway lie on the wall plane, so the door was open; 48.8% lie in front of it, so something occluded the opening. The detector measured what it could see through. |
+| Why MASt3R and not COLMAP? | COLMAP registered **4 photographs of 29**. A bedroom wall is flat, blank and dim, and matching needs texture. |
+| What was actually wrong with tier A? | dust3r's aligner normalises pairwise scale, which discards the metric property the checkpoint exists for. Off: **-50.7%**. On: **-8.1%**. |
+| Why is video worse than photos when it has more frames? | Motion blur, and frames sampled across a clip share less scene than stills taken a step apart. It is also held to a tighter gate, ±3% against ±8%. |
+| Why is damage off by default? | **79 regions on a clean control room.** The brief scores a phantom as harshly as a miss. |
+| Why does the ceiling gate fail on the pairing you report? | Two compliant captures differ by 1.49 cm. Reporting the pairing that passes and hiding the one that does not would be choosing the answer. |
+| Why is the ground truth the weak link? | Ten tape readings of one ceiling span **6.9 cm** against a 1.5 cm gate. Our own two captures agree to 0.5 cm. The ruler is coarser than the thing measured. |
+| What would you do next? | Buy a laser. It is twenty five dollars and it is the binding constraint on every accuracy figure here. |
+
+**The one thing to concede early.** Tiers A and B are not reliable: two of six
+captures inside their gate, median error 15.9%, and no photo capture produces
+the whole-property stitch the brief asks for. Every part of that is measured,
+written down, and claimed against nothing. Conceding it costs less than
+defending it.
+
 ## Deliverable 8: the raw benchmark data
 
 **1.4 GB, not in this repo.** It is raw sensor data, and the brief allows large
