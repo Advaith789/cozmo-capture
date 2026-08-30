@@ -518,11 +518,17 @@ directories by filename stem: corrected poses, raw metadata.
   exist**, because only one photo capture recovers two opposing wall pairs, so
   that row of the brief is a fail. This remains the largest gap in the
   submission, and it is now a measured gap rather than an empty one.
-- **The opening-width gate is not claimed.** Detection works and is scored on
-  synthetic truth at 0.8 cm mean error against the 2 cm gate. On a real capture
-  it finds the doorway but measures the clear opening, 0.587 m, against a
-  0.958 m frame, and a partly open door cannot be separated from a measurement
-  error without a controlled re-capture.
+- **The opening-width gate is not claimed, and we now know why.** Detection is
+  ray traced and reaches 0.8 cm mean error on synthetic truth against the 2 cm
+  gate. On my room it finds the doorway and measures **0.587 m against a
+  0.958 m frame**, and the cause is measurable rather than speculative. Of the
+  returns in that doorway at door height, **1.2% lie on the wall plane**, so the
+  door was genuinely open and not closed; but **48.8% lie in front of the wall**,
+  something standing between the sensor and the opening. The detector measures
+  what it could see through, which was 0.587 m of it. Lowering the see-through
+  threshold from 3 crossings to 1 does not change the number, so the limit is
+  the occlusion and not the setting. The fix is a capture with a clear approach
+  to the doorway, which the protocol now asks for and none of our captures did.
 - **The multi-room stitch has no ground truth.** It works, and the friend 2
   capture splits into two rooms joined by a 1.100 m doorway, but we hold no
   tape for any room boundary or doorway, so only the synthetic result (1.0 cm

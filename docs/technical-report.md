@@ -190,10 +190,13 @@ wall pairs, and that row of the brief is a fail.
 
 **Opening widths are not claimed.** Detection is ray traced, which is what
 separates a doorway from a wardrobe standing against a wall, and it reaches
-0.8 cm mean error on synthetic truth against a 2 cm gate. On a real capture it
-measures the clear opening the sensor saw through, 0.587 m, against a 0.958 m
-frame. That is the frame width only with the door fully open, and a partly open
-door is not separable from a measurement error without a controlled re-capture.
+0.8 cm mean error on synthetic truth against a 2 cm gate. On a real capture it measures
+the clear opening the sensor saw through, 0.587 m, against a 0.958 m frame, and
+that gap is now explained rather than guessed at. Of the returns in the doorway
+at door height, 1.2% lie on the wall plane, so the door was open; 48.8% lie in
+front of it, so something stood between the sensor and the opening. Lowering the
+see-through threshold does not recover the missing width, which places the limit
+on the capture rather than the setting.
 
 **Damage detection over-fires**: 79 regions on a clean control room. It runs
 behind `--damage`, off by default, claimed against nothing.

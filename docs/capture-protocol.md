@@ -9,7 +9,9 @@ and without it a LiDAR capture cannot be measured.
 ## 1. Prepare the room, 2 minutes
 
 Turn on **every light** and open every curtain. Pick up anything on the floor
-you can move in a minute. Open all internal doors **fully** against the wall.
+you can move in a minute. Open all internal doors **fully** against the wall,
+and **move anything standing in front of a doorway**: a bin, a chair, a box in
+the opening is measured as the doorway being narrower than it is.
 Leave mirrors and glass as they are; do not cover them.
 
 ## 2. Pick your tier
