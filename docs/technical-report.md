@@ -52,15 +52,16 @@ not yet produce usable measurements.
 | **Polycam raw zip** | The LiDAR capture, exported with developer mode on: images, depth, confidence, intrinsics and two sets of poses. |
 | **photo folder / video** | The camera-only tiers, shot on the native Camera app because Polycam exports nothing usable without LiDAR. |
 | **ingest.lidar** | Unpacks the archive and joins `corrected_cameras` for pose with `cameras` for the sensor metadata the corrected files drop. |
-| **ingest.camera** | Recovers poses from images by matching features and chaining relative motion, since these tiers ship neither poses nor depth. |
+| **ingest.learned** | Reconstructs tiers A and B with MASt3R, a learned multi-view model run locally. Feature matching could not do it: a bedroom wall is flat, blank and dim, and COLMAP registered 4 photographs of 29. Amber because it reconstructs but reads 8 to 15% low and closes no room polygon. |
 | **metric depth model** | Predicts absolute distance in metres from a single image, which is what supplies scale to a reconstruction that otherwise has none. Dotted because it informs the camera tiers rather than sitting in the data path. |
 | **PosedFrame** | The one representation all three tiers converge on, so the geometry below it is written once instead of three times. |
 | **drift correction** | Solves per-frame corrections against the floor and ceiling planes, tied through time; the correction strength sweeps to zero for the required ablation. |
 | **envelope surfaces** | Locates floor and ceiling at a tail quantile of the point cloud rather than its densest band, because clutter sits on floors and fittings hang below ceilings. |
 | **wall plane detection** | Recovers the room's own axes, then fits each wall as a plane to hundreds of thousands of points rather than measuring the spread of the cloud. |
 | **room** | Intersects the fitted walls into a polygon and derives area, perimeter and wall lengths, each with a bootstrapped interval. |
-| **openings** | Finds doors and windows as regions of a wall with no returns bounded by returns; amber because widths swing by up to a factor of two. |
-| **damage** | Flags colour anomalies against each surface's local appearance; red because it cannot separate a real gouge from wood grain. |
+| **space segmentation** | Splits a capture covering more than one room before anything is measured, by eroding the floor occupancy until doorways sever and flooding the room cores back out. Doorway width falls out of the distance transform at the seam. |
+| **openings** | Classifies each cell of a wall as seen-through, wall, or occluded, using the ray from the camera to each return. That is what separates a doorway from a wardrobe standing in front of one, which absence-of-returns cannot. 0.8 cm mean width error on synthetic truth; amber because on a real capture it measures the clear opening at capture time rather than the frame. |
+| **damage** | Flags colour anomalies against each surface's local appearance. Opt-in via `--damage` and red because it reported 79 regions on a clean control room, so it cannot separate a real gouge from wood grain. |
 | **JSON + SVG** | The output contract: every number with its interval and the provenance chain that produced it, plus a dimensioned plan. |
 | **solid arrow** | Data flows and the result is claimed. |
 | **dotted arrow** | Contributes, but its output is labelled experimental and excluded from the gates. |
@@ -100,8 +101,10 @@ a measurement.
 
 **Geometry never calls a model.** Ingest through room assembly is deterministic
 and offline. That is what the repeatability gate actually measures. The
-`.env` holds an OpenAI key meant for damage classification, and no geometry path
-reads it. That layer is unbuilt, so this submission calls nothing.
+`.env` holds an OpenAI key used only by the tier A last-resort estimator, which
+runs when a photo capture yields neither a reconstruction nor a floor. No
+geometry path reads it, and the LiDAR tier never calls it. The learned tier A/B
+model runs entirely locally.
 
 One piece of deliberate duplication: `scripts/inspect_capture.py` re-implements
 PNG decoding in pure stdlib, so the field tool runs on a clean laptop the second
@@ -371,19 +374,70 @@ tool and was not integrated in time. **Both tiers are therefore reported as
 reconstructing but not measuring, and the walk-in test can only be served at
 the LiDAR tier.** That is the largest gap in the submission.
 
-**Opening detection exists but we do not claim the gate.** The detector finds
-holes in a fitted wall: a region with no returns bounded by returns, classified
-by whether it reaches the floor. On a good wall it lands within 0.2 cm of the
-taped door. But its widths swing by up to a factor of two across frame counts,
-because the occupancy grid has gaps wherever the scan missed, and the gate is
-2 cm. Requiring an opening to survive resampling of the frames removed the worst
-phantoms and cut the count from four to two, but did not stabilise the widths.
-Output is tagged `status:EXPERIMENTAL` and reported with an honest interval
-rather than claimed. A phantom opening scores as harshly as a missed one, so
-claiming this would cost more than it earns.
+**Opening detection was rebuilt, and we still do not claim the gate.** The
+first detector looked for holes in a fitted wall: absence of returns bounded by
+returns. Its widths swung by up to a factor of two across frame counts, and the
+reason turned out to be structural rather than a tuning problem. That method is
+correct for a building facade scanned from outside, where the only thing making
+a hole in a wall is a hole in the wall. Indoors it is false. A wardrobe, a bed,
+a person standing still all stop the sensor reaching the wall, and in the data
+that is indistinguishable from a doorway.
 
-**No stitched multi-room plan.** Five rooms measured individually. The whole
-property plan that the brief calls the product surface does not exist.
+What separates them is not the hole, it is the ray. For every depth sample we
+know where the camera stood and where the return came from, so we know whether
+the line between them crossed the wall plane. A return past the wall means we
+saw through it. A return on the wall means there is wall. A return short of the
+wall means something was in the way and we learned nothing about what is behind
+it. The old method scored that third case as evidence of an opening; it is
+evidence of nothing, and treating it as such is the whole fix.
+
+On synthetic truth, with a real 0.90 m doorway and a 0.85 m wardrobe against the
+same wall, the new detector reports the doorway and rejects the wardrobe, with
+0.8 cm mean width error against the 2 cm gate. Reaching that needed one further
+correction. Counting cells can only answer to the nearest cell, and it is wrong
+in both directions at once: a cell counts as open if any ray crossed it, which
+widens the opening, while requiring several crossings drops the part-covered
+cells at each jamb, which narrows it. Those cancelled at a 2 cm grid and did not
+at 3 or 4 cm, which is agreement by luck. Placing each jamb where the crossing
+count falls to half its plateau, interpolated between cells, made the width
+independent of the grid.
+
+None of which earns the gate on a real capture. On my room it finds the doorway
+and measures 0.587 m against a 0.958 m frame. That is not simply an error: the
+detector measures the clear opening the sensor could see through at the moment
+of capture, which equals the frame only if the door stood fully open. A partly
+open door and a measurement error are not separable from this data, and saying
+so is more useful than picking one. Output stays `status:EXPERIMENTAL`, and the
+interval quoted is the precision of the see-through measurement rather than an
+uncertainty in the frame width, because they are not the same quantity.
+
+**The multi-room stitch now exists.** A capture spanning more than one room used
+to produce a single rectangle drawn across both, with an area belonging to no
+real room, and nothing downstream noticed, because a fictitious room is still
+geometrically well formed. The floor is now projected to an occupancy image and
+eroded by a little over half a door width, which severs every doorway and leaves
+each room as an island; the islands are grown back over the original floor so
+each room keeps its true extent, and every point, wall and ceiling included, is
+assigned to the room it stands in. Each room is then measured separately, with
+its own bootstrap over its own frames.
+
+The doorway falls out for free. Where two grown regions meet is the passage
+between them, and the distance transform at the widest point of that seam is
+half the clear width. On the hallway capture this splits into two rooms with a
+doorway at 0.873 m [0.853, 0.893], which is a standard door. On synthetic truth
+the doorway is accurate to 1.0 cm.
+
+Two things were worth getting wrong first. A morphological closing is the
+obvious way to fill the holes furniture punches in a floor, and at any radius
+wide enough to fill a wardrobe shadow it also bridges an interior wall and
+dissolves the boundary it was meant to keep; holes are filled by connectivity
+instead, since a furniture shadow is enclosed by floor and a wall reaches the
+outside. And the room labels initially covered only floor, which quietly
+excluded every wall point, because a wall stands at the floor's edge rather than
+on it. The bootstrap came back with no valid draws at all before that was found.
+
+What still does not exist is the photo-tier whole-property stitch, because no
+photo capture reconstructs a closed room to stitch.
 
 **Scope line items and concealed-condition flags do ship.** Line items are a
 takeoff from geometry already measured, so each carries the interval of the

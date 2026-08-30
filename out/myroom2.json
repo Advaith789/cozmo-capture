@@ -1,6 +1,6 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-29T23:47:10+00:00",
+  "generated": "2026-08-30T03:29:02+00:00",
   "capture": {
     "source": "8_29_2026 - My room 2.zip",
     "tier": "C",
@@ -184,50 +184,16 @@
       "openings_status": "experimental, not claimed against the opening gate: widths vary by a factor of two across frame counts",
       "openings": [
         {
-          "wall_index": 0,
+          "wall_index": 2,
           "kind": "door",
-          "width_m": 0.88,
-          "height_m": 1.48,
-          "sill_m": 0.0,
+          "width_m": 0.587,
+          "height_m": 2.24,
+          "sill_m": 0.02,
           "width_ci": [
-            0.854,
-            1.306
+            0.567,
+            0.607
           ],
-          "border_confidence": 1.0,
-          "provenance": [
-            "depth:measured",
-            "method:wall_plane_hole",
-            "status:EXPERIMENTAL"
-          ]
-        },
-        {
-          "wall_index": 2,
-          "kind": "window",
-          "width_m": 0.92,
-          "height_m": 0.92,
-          "sill_m": 1.32,
-          "width_ci": [
-            0.88,
-            0.946
-          ],
-          "border_confidence": 1.0,
-          "provenance": [
-            "depth:measured",
-            "method:wall_plane_hole",
-            "status:EXPERIMENTAL"
-          ]
-        },
-        {
-          "wall_index": 2,
-          "kind": "window",
-          "width_m": 0.8,
-          "height_m": 1.28,
-          "sill_m": 0.96,
-          "width_ci": [
-            0.76,
-            0.84
-          ],
-          "border_confidence": 1.0,
+          "border_confidence": 0.75,
           "provenance": [
             "depth:measured",
             "method:wall_plane_hole",
@@ -240,11 +206,11 @@
   "stitched_plan": {
     "rooms": 1,
     "adjacency": [],
-    "status": "single-room capture; adjacency requires a multi-room capture and opening detection"
+    "status": "single-room capture; nothing to stitch"
   },
   "damage": {
     "regions": [],
-    "status": "detector built and measured; not shipped because it could not separate a real defect from surface texture"
+    "status": "opt-in via --damage; measured 79 false positives on a clean control room, so it is off by default and claimed against no gate"
   },
   "concealed_conditions": [
     {
@@ -279,12 +245,12 @@
     {
       "surface": "walls",
       "item": "wall paint, net of openings",
-      "quantity": 32.976,
-      "ci_low": 32.858,
-      "ci_high": 33.093,
+      "quantity": 34.833,
+      "ci_low": 34.71,
+      "ci_high": 34.957,
       "unit": "m2",
       "basis": "perimeter x ceiling height, less detected openings",
-      "note": "3 opening(s) subtracted, 3.17 m2; opening detection is experimental"
+      "note": "1 opening(s) subtracted, 1.31 m2; opening detection is experimental"
     },
     {
       "surface": "perimeter",
@@ -345,10 +311,8 @@
     }
   ],
   "known_limitations": [
-    "This capture appears to span more than one space; the dimensions describe the scanned envelope, not a single room.",
-    "Opening detection is EXPERIMENTAL and is not claimed against the opening-width gate: widths vary by up to a factor of two across frame counts, against a 2 cm gate.",
-    "Damage regions not implemented.",
-    "Single-room capture: no stitched multi-room plan or adjacency.",
-    "Tiers A and B ingest not implemented."
+    "Opening detection is EXPERIMENTAL and is not claimed against the opening-width gate. It measures the clear opening the sensor could see through at capture time, which equals the frame width only if the door stood fully open. On the one doorway we hold a tape for it read 0.587 m against a 0.958 m frame, and a partly open door and a measurement error are not separable without a controlled re-capture. The interval quoted is the precision of the see-through measurement, not the uncertainty in the frame width.",
+    "Damage detection is opt-in via --damage and is not claimed against any gate: it reported 79 regions on a clean control room.",
+    "Single-room capture: one room, so no adjacency to report."
   ]
 }

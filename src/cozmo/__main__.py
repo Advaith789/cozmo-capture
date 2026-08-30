@@ -192,6 +192,85 @@ def _photo_height_only(path: Path, args: argparse.Namespace) -> int:
     return 0
 
 
+def _cameras_fit(room, cameras, margin: float = 0.35) -> bool:
+    """Whether every camera stands inside the room it reconstructed.
+
+    A sanity check the LiDAR tier never needs and the photo tiers very much do.
+    It is not a tolerance to tune: a photographer outside their own room is not
+    a small error, it is a broken reconstruction.
+    """
+    import numpy as np
+
+    poly = room.corners
+    if poly is None or len(poly) < 3:
+        return False
+    xz = np.asarray(cameras)[:, [0, 2]]
+    cx, cz = poly[:, 0], poly[:, 1]
+    inside = np.zeros(len(xz), dtype=bool)
+    j = len(poly) - 1
+    for i in range(len(poly)):
+        cond = ((cz[i] > xz[:, 1]) != (cz[j] > xz[:, 1])) & (
+            xz[:, 0] < (cx[j] - cx[i]) * (xz[:, 1] - cz[i])
+            / (cz[j] - cz[i] + 1e-12) + cx[i])
+        inside ^= cond
+        j = i
+    # The room must also be at least as big as the ground the operator covered.
+    walked = float(np.ptp(xz, axis=0).max())
+    biggest = max(m.value for m in room.wall_lengths) if room.wall_lengths else 0.0
+    return bool(inside.mean() >= 0.8 and biggest >= walked + margin)
+
+
+def _height_only(cap, height, args, tier: str, path: Path, t0: float) -> int:
+    """Tiers A and B when the walls do not close a room.
+
+    Reported as a partial result with the one dimension that is sound, rather
+    than as a failure, because ceiling height from a photo reconstruction is a
+    real measurement and a surveyor can use it.
+    """
+    import json
+    from datetime import datetime, timezone
+
+    print("\n[!] The reconstruction did not recover two opposing wall pairs, "
+          "so no\n    room polygon closes. Ceiling height is reported; wall "
+          "lengths, floor\n    area and the plan are not available from this "
+          "capture.")
+    print(f"\nceiling height   {height}")
+    print(f"provenance       {' | '.join(height.provenance)}")
+    if args.truth_height:
+        err = (height.value - args.truth_height) * 100
+        rel = height.value / args.truth_height - 1
+        print(f"accuracy         {err:+.1f} cm vs tape ({rel:+.1%})   "
+              f"{'PASS' if abs(rel) <= 0.08 else 'fail'} against the photo "
+              f"tier's ±8% gate")
+
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    doc = {
+        "schema": "cozmo-plan/0.2",
+        "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "capture": {"source": path.name, "tier": tier,
+                    "frames_used": cap.meta.get("loaded"),
+                    "frames_total": cap.meta.get("total_keyframes")},
+        "rooms": [],
+        "partial": {
+            "ceiling_height_m": round(height.value, 4),
+            "ci_low": round(height.lo, 4), "ci_high": round(height.hi, 4),
+            "provenance": height.provenance,
+        },
+        "known_limitations": [
+            "No room polygon: the reconstruction recovered fewer than two "
+            "opposing wall pairs, so wall lengths, floor area and the plan "
+            "cannot be produced from this capture.",
+            "Ceiling height only, from a learned multi-view reconstruction.",
+        ],
+    }
+    jpath = out / f"{args.name}.json"
+    jpath.write_text(json.dumps(doc, indent=2) + "\n")
+    print(f"\nwrote  {jpath}")
+    print(f"elapsed          {time.time() - t0:.1f}s")
+    return 0
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     """One command per capture: raw export in, JSON contract and plan out."""
     path = Path(args.capture)
@@ -213,8 +292,10 @@ def cmd_run(args: argparse.Namespace) -> int:
 
         from cozmo.contract import render, schema, scope
         from cozmo.geometry import concealed
+        from cozmo.geometry import damage as damage_mod
         from cozmo.geometry import room as room_mod
         from cozmo.geometry import openings as openings_mod
+        from cozmo.geometry import spaces as spaces_mod
         from cozmo.geometry import walls
         from cozmo.geometry.height import _modes, ceiling_height
         from cozmo.ingest import camera, lidar, mesh
@@ -224,19 +305,34 @@ def cmd_run(args: argparse.Namespace) -> int:
               "requirements.txt", file=sys.stderr)
         return 1
 
-    if tier == "A":
-        return _photo_height_only(path, args)
-
     t0 = time.time()
+    # Tiers A and B go through the learned multi-view model where it is
+    # installed. It is the only thing that reconstructs these rooms at all:
+    # classical matching registered 4 photographs of 29 on blank bedroom walls.
+    learned_mod = None
+    if tier in ("A", "B") and not args.no_learned:
+        from cozmo.ingest import learned as learned_mod
+        if not learned_mod.available():
+            print("\n[!] the learned tier is not installed "
+                  "(see scripts/setup_learned.sh);")
+            print("    falling back to per-photo metric depth.")
+            learned_mod = None
+
     try:
         if tier == "C":
             cap = lidar.load(path, max_frames=args.frames)
         elif tier == "M":
             cap = mesh.load(path)
+        elif learned_mod is not None:
+            print(f"model     {learned_mod.MODEL.split('/')[-1]}")
+            cap = learned_mod.load(path, tier=tier, n_views=args.views)
+            print(f"views     {cap.meta['loaded']} from a burst of "
+                  f"{cap.meta['burst_photos']}"
+                  f"{'  (cached)' if cap.meta['from_cache'] else ''}")
         elif tier == "B":
             cap = camera.load_video(path)
         else:
-            cap = camera.load_photos(path)
+            return _photo_height_only(path, args)
     except Exception as exc:
         print(f"error: could not read {path.name}: "
               f"{type(exc).__name__}: {exc}", file=sys.stderr)
@@ -246,7 +342,13 @@ def cmd_run(args: argparse.Namespace) -> int:
     print(f"frames    {cap.meta['loaded']} of {cap.meta['total_keyframes']}")
 
     try:
-        method = args.height_method if tier in ("C", "M") else "sparse"
+        # The learned tier returns a dense pointmap, not a sparse feature
+        # cloud, so it has real floor and ceiling bands for the envelope
+        # estimator to find. Measured on my room: sparse read 17.7% low
+        # because a tail quantile cuts the ceiling off when a tenth of the
+        # points are up there; envelope read 9.6% low on the same cloud.
+        dense = tier in ("C", "M") or cap.meta.get("model")
+        method = args.height_method if dense else "sparse"
         height = ceiling_height(cap, method=method,
                                 bootstrap=args.bootstrap,
                                 sigma_step=args.sigma_step)
@@ -256,8 +358,22 @@ def cmd_run(args: argparse.Namespace) -> int:
               "Re-scan tilting up and down at each corner.", file=sys.stderr)
         return 3
     if tier == "C":
-        pts = np.vstack([lidar.to_world_points(f) for f in cap.frames])
+        # Back-project every frame exactly once. The world points, the camera
+        # each was seen from, and the stacked cloud are all wanted downstream,
+        # and re-deriving them separately was doing this twice over 160 frames.
+        graded = [(lidar.to_world_graded(f), f.T_wc[:3, 3]) for f in cap.frames]
+        # Strict for geometry, permissive for openings. See to_world_graded.
+        views_all = [(p[(c >= 2) & (z <= 5.0)], ctr)
+                     for (p, c, z), ctr in graded]
+        views_all = [(p, ctr) for p, ctr in views_all if len(p)]
+        views_open = [(p[c >= 1], ctr) for (p, c, z), ctr in graded]
+        views_open = [(p, ctr) for p, ctr in views_open if len(p) > 200]
+        clouds = [c for c, _ in views_all]
+        pts = np.vstack(clouds) if clouds else np.empty((0, 3))
     else:
+        views_all = []
+        views_open = []
+        clouds = [cap.meta["points"]]
         pts = cap.meta["points"]
     if tier in ("C", "M"):
         fy, cy = _modes(pts[:, 1])
@@ -268,54 +384,111 @@ def cmd_run(args: argparse.Namespace) -> int:
         # surfaces, trimmed to shed stray triangulations.
         fy, cy = (float(np.percentile(pts[:, 1], 1.0)),
                   float(np.percentile(pts[:, 1], 99.0)))
-    axes = walls.detect(pts, fy, cy)
-
-    # Resample frames and re-detect, so the room's intervals carry the same
-    # pose disagreement the ceiling interval does rather than an assumed value.
-    if tier == "C":
-        clouds = [c for c in (lidar.to_world_points(f) for f in cap.frames)
-                  if len(c)]
-        rng = np.random.default_rng(0)
-        draws = []
-        print(f"bootstrap {args.wall_draws} wall refits", end="", flush=True)
-        for _ in range(args.wall_draws):
-            pick = rng.integers(0, len(clouds), len(clouds))
-            sub = np.vstack([clouds[i] for i in pick])
-            d = walls.refit(axes, sub, fy, cy)
-            if d is not None:
-                draws.append(d)
-            print(".", end="", flush=True)
-        print()
-    else:
-        # On the camera tiers the scale comes from a prior on how high the
-        # operator held the phone, and its spread swamps every other source of
-        # error. Resampling points would report a tighter interval than the
-        # scale itself justifies, so the interval is the prior, propagated.
-        clouds = [pts]
-        draws = []
-        rng = np.random.default_rng(0)
-        for s_factor in np.linspace(cap.meta["scale_lo"], cap.meta["scale_hi"], 24):
-            d = walls.refit(axes, pts * s_factor, fy * s_factor, cy * s_factor)
-            if d is not None:
-                draws.append(d)
-
-    multi, why = walls.spans_multiple_spaces(pts, fy, axes)
+    # Carve the capture into rooms before measuring anything. A capture that
+    # covers two rooms fits one rectangle across both and reports dimensions
+    # that belong to no real room, so the split has to happen first.
+    seg = spaces_mod.segment(pts, fy)
+    multi = seg.count > 1
     if multi:
-        print(f"\n[!] {why}.")
-        print("    We measure one room at a time; the multi-room stitch is not")
-        print("    built. The dimensions below describe the whole scanned")
-        print("    envelope, not a room. Re-capture one room per scan.")
+        print(f"spaces    {seg.count} rooms, {len(seg.doorways)} doorway(s)")
+        for d in seg.doorways:
+            print(f"  doorway   rooms {d.room_a}-{d.room_b}   clear width "
+                  f"{d.width_m:.3f} m  [{d.lo:.3f}, {d.hi:.3f}]")
 
-    rm = room_mod.build(axes, height, name=args.name, draws=draws)
-    if rm is not None:
-        stable = openings_mod.find_stable(clouds, rm.walls, fy, cy,
-                                          draws=max(6, args.wall_draws // 6))
-        rm.openings.extend((i, o) for i, o, _, _ in stable)
-        rm.opening_ci.extend((lo, hi) for _, _, lo, hi in stable)
-    if rm is None:
+    rooms = []
+    for sp in seg.spaces:
+        spts = sp.points if multi else pts
+        ax = walls.detect(spts, fy, cy)
+        if ax is None:
+            continue
+        # Work out once which of each frame's points belong to this room. The
+        # bootstrap and the opening detector both need it, and asking twice
+        # meant gridding every frame twice per room.
+        if multi:
+            masks = [seg.assign(c) == sp.index for c in clouds]
+            rc = [c[m] for c, m in zip(clouds, masks) if m.sum() > 200]
+            om = [seg.assign(c) == sp.index for c, _ in views_open]
+            rv = [(c[m], ctr) for (c, ctr), m in zip(views_open, om)
+                  if m.sum() > 200]
+        else:
+            rc = [c for c in clouds if len(c) > 200]
+            rv = list(views_open)
+
+        # Resample frames and re-detect, so the room's intervals carry the same
+        # pose disagreement the ceiling interval does rather than an assumed
+        # value.
+        draws = []
+        if tier == "C" and rc:
+            rng = np.random.default_rng(0)
+            tag = f" room {sp.index}" if multi else ""
+            print(f"bootstrap {args.wall_draws} wall refits{tag}",
+                  end="", flush=True)
+            for _ in range(args.wall_draws):
+                pick = rng.integers(0, len(rc), len(rc))
+                d = walls.refit(ax, np.vstack([rc[i] for i in pick]), fy, cy)
+                if d is not None:
+                    draws.append(d)
+                print(".", end="", flush=True)
+            print()
+        elif tier != "C":
+            # On the camera tiers the scale comes from a prior on how high the
+            # operator held the phone, and its spread swamps every other source
+            # of error. Resampling points would report a tighter interval than
+            # the scale itself justifies, so the interval is the prior,
+            # propagated.
+            draws = [walls.scaled(ax, f) for f in
+                     np.linspace(cap.meta["scale_lo"], cap.meta["scale_hi"], 24)]
+
+        nm = f"{args.name}-room{sp.index}" if multi else args.name
+        r = room_mod.build(ax, height, name=nm, draws=draws)
+        if r is None:
+            continue
+        if rv:
+            for wi, w in enumerate(r.walls):
+                for o in openings_mod.find_raytraced(rv, w, fy, cy):
+                    r.openings.append((wi, o))
+                    # A cell counts as seen through if any ray crossed it, so
+                    # both edges round outward: the same one-cell quantisation
+                    # the doorway widths carry.
+                    r.opening_ci.append((round(o.width - openings_mod.RT_CELL, 3),
+                                         round(o.width + openings_mod.RT_CELL, 3)))
+        elif rc:
+            stable = openings_mod.find_stable(rc, r.walls, fy, cy,
+                                              draws=max(6, args.wall_draws // 6))
+            r.openings.extend((i, o) for i, o, _, _ in stable)
+            r.opening_ci.extend((lo, hi) for _, _, lo, hi in stable)
+        rooms.append(r)
+
+    # A photo reconstruction can close a polygon that is simply wrong, and a
+    # confidently wrong room is worse than none. The photographer stood inside
+    # the room, so every camera must fall within the walls it reports: on the
+    # burst where the geometry collapsed, the walls came back at 1.16 and
+    # 1.88 m while the camera path alone spanned 1.2 m, which is impossible.
+    if rooms and tier in ("A", "B") and cap.meta.get("cameras") is not None:
+        kept = [r for r in rooms if _cameras_fit(r, cap.meta["cameras"])]
+        if not kept:
+            print("\n[!] The reconstructed walls do not enclose the camera "
+                  "positions, so\n    the room geometry is wrong however "
+                  "neatly it closed. Discarded.")
+        rooms = kept
+
+    if multi and len(rooms) < seg.count:
+        print(f"          {seg.count - len(rooms)} of {seg.count} spaces did "
+              f"not close a polygon and are not reported;")
+        print(f"          they are usually too small or seen from too few "
+              f"angles to fit two opposing walls.")
+
+    if not rooms:
+        if tier in ("A", "B"):
+            # A photo reconstruction often recovers some walls but not two
+            # opposing pairs, and a room needs both to close. Ceiling height
+            # survives that, because it needs only the floor and the ceiling,
+            # so it is reported rather than thrown away.
+            return _height_only(cap, height, args, tier, path, t0)
         print("error: could not close a room polygon from the detected walls",
               file=sys.stderr)
         return 3
+    rm = rooms[0]
 
     truth_walls = None
     if args.truth_walls:
@@ -325,11 +498,34 @@ def cmd_run(args: argparse.Namespace) -> int:
                   file=sys.stderr)
             return 4
 
-    line_items = scope.build(rm)
-    surface_m2 = (2 * rm.floor_area.value
-                  + rm.perimeter.value * rm.ceiling_height.value)
+    if multi:
+        from dataclasses import replace as _replace
+        line_items = [_replace(li, surface=f"{r.name}:{li.surface}")
+                      for r in rooms for li in scope.build(r)]
+    else:
+        line_items = scope.build(rm)
+    surface_m2 = sum(2 * r.floor_area.value
+                     + r.perimeter.value * r.ceiling_height.value
+                     for r in rooms)
     flags = (concealed.detect(cap.frames, fy, cy, room_surface_m2=surface_m2)
              if tier == "C" else [])
+
+    # Damage detection is opt in and stays that way. It is a real detector
+    # with a real measured failure rate: on a clean control room with nothing
+    # wrong with it, it reported 79 regions. Shipping that on by default would
+    # bury a true finding in noise, and the brief scores a phantom as harshly
+    # as a miss. Kept reachable and documented rather than deleted, because a
+    # measured negative result is worth more than a missing one.
+    marks = []
+    if args.damage and tier == "C":
+        marks = damage_mod.detect(cap.frames)
+        print(f"\ndamage regions   {len(marks)}  (EXPERIMENTAL, opt-in, "
+              f"not claimed against any gate)")
+        for m in marks[:12]:
+            print(f"  [{m.kind}] {m.width_cm:.1f} x {m.height_cm:.1f} cm  "
+                  f"seen in {m.seen_in} frames  conf {m.confidence:.2f}")
+        if len(marks) > 12:
+            print(f"  ... and {len(marks) - 12} more")
 
     print(f"\nscope line items")
     for li in line_items:
@@ -351,30 +547,50 @@ def cmd_run(args: argparse.Namespace) -> int:
           for i, m in enumerate(rm.wall_lengths)],
     ]
     notes = ([
-        "This capture appears to span more than one space; the dimensions "
-        "describe the scanned envelope, not a single room."] if multi else []) + [
+        f"This capture covers {seg.count} spaces. They were segmented and "
+        f"measured separately; dimensions below are per room, and the gates "
+        f"are scored against room 1.",
+        "Doorway widths come from an occupancy grid and carry a one-cell "
+        "interval; they are not claimed against the opening-width gate."]
+        if multi else []) + [
         "Opening detection is EXPERIMENTAL and is not claimed against the "
-        "opening-width gate: widths vary by up to a factor of two across "
-        "frame counts, against a 2 cm gate.",
-        "Damage regions not implemented.",
-        "Single-room capture: no stitched multi-room plan or adjacency.",
-        "Tiers A and B ingest not implemented.",
-    ]
+        "opening-width gate. It measures the clear opening the sensor could "
+        "see through at capture time, which equals the frame width only if "
+        "the door stood fully open. On the one doorway we hold a tape for it "
+        "read 0.587 m against a 0.958 m frame, and a partly open door and a "
+        "measurement error are not separable without a controlled re-capture. "
+        "The interval quoted is the precision of the see-through measurement, "
+        "not the uncertainty in the frame width.",
+        ("Damage detection is opt-in via --damage and is not claimed against "
+         "any gate: it reported 79 regions on a clean control room."
+         if not args.damage else
+         "Damage regions below are EXPERIMENTAL: the detector reported 79 "
+         "regions on a clean control room, so treat every one as a candidate "
+         "for a human to confirm."),
+    ] + ([] if multi else
+         ["Single-room capture: one room, so no adjacency to report."])
 
     out = Path(args.out)
-    doc = schema.build(cap, [rm], gates=gates, notes=notes,
+    doc = schema.build(cap, rooms, gates=gates, notes=notes,
                        scope_items=scope.to_json(line_items),
-                       concealed=concealed.to_json(flags))
+                       concealed=concealed.to_json(flags),
+                       stitched=spaces_mod.to_json(seg) if multi else None,
+                       damage=damage_mod.to_json(marks) if args.damage else None)
     jpath = schema.write(doc, out / f"{args.name}.json")
-    spath = render.write(rm, out / f"{args.name}.svg", title=args.name)
+    svgs = [render.write(r, out / f"{r.name}.svg", title=r.name) for r in rooms]
+    spath = svgs[0]
 
-    print(f"\nfloor area       {rm.floor_area}")
-    print(f"perimeter        {rm.perimeter}")
-    print(f"ceiling height   {rm.ceiling_height}")
-    for i, m in enumerate(rm.wall_lengths):
-        print(f"  wall {i}         {m}")
+    for r in rooms:
+        if multi:
+            print(f"\n{r.name}")
+        print(f"\nfloor area       {r.floor_area}")
+        print(f"perimeter        {r.perimeter}")
+        print(f"ceiling height   {r.ceiling_height}")
+        for i, m in enumerate(r.wall_lengths):
+            print(f"  wall {i}         {m}")
     if rm.openings:
-        print(f"\nopenings         {len(rm.openings)} found  (EXPERIMENTAL, gate not claimed)")
+        print(f"\nopenings         {len(rm.openings)} found  (EXPERIMENTAL, "
+              f"clear opening not frame width, gate not claimed)")
         for k, (idx, o) in enumerate(rm.openings):
             lo, hi = rm.opening_ci[k] if k < len(rm.opening_ci) else (o.width, o.width)
             print(f"  wall {idx}          {o.kind:<6} width {o.width:.3f} m "
@@ -388,7 +604,9 @@ def cmd_run(args: argparse.Namespace) -> int:
         print(f"  {g['gate']:<18} precision ±{g['interval_half_width_m'] * 100:5.2f} cm "
               f"{'PASS' if g['precision_pass'] else 'FAIL'}{acc}")
 
-    print(f"\nwrote  {jpath}\n       {spath}")
+    print(f"\nwrote  {jpath}")
+    for sv in svgs:
+        print(f"       {sv}")
     print(f"elapsed          {time.time() - t0:.1f}s")
     return 0
 
@@ -551,6 +769,16 @@ def main(argv: list[str] | None = None) -> int:
                    choices=["envelope", "drift", "per_frame", "pooled"],
                    help="ceiling estimator; the last three are kept for the "
                         "fix-loop ablation")
+    r.add_argument("--damage", action="store_true",
+                   help="run the opt-in damage detector (Tier C only). It "
+                        "over-fires: 79 regions on a clean control room, so "
+                        "it is off by default and claimed against no gate.")
+    r.add_argument("--views", type=int, default=12,
+                   help="frames the learned tier reconstructs from "
+                        "(tiers A and B; default: 12)")
+    r.add_argument("--no-learned", dest="no_learned", action="store_true",
+                   help="skip the learned multi-view model on tiers A and B "
+                        "and fall back to per-photo metric depth")
     r.add_argument("--wall-draws", dest="wall_draws", type=int, default=50,
                    help="bootstrap resamples for the room's intervals")
     r.add_argument("--truth-walls", dest="truth_walls", default=None,

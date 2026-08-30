@@ -23,8 +23,8 @@ omitted; a matrix that hides them is worth less than one that does not.
 
 | # | Requirement | File | Artifact | Status |
 |---|---|---|---|---|
-| 1.7 | Tier A, photos, 2 to 8 stills per room | [src/cozmo/ingest/](../src/cozmo/ingest/) | captured for 3 rooms; **ingest not implemented** | **not done** |
-| 1.8 | Tier B, handheld video | [src/cozmo/ingest/](../src/cozmo/ingest/) | captured for 3 rooms; **ingest not implemented** | **not done** |
+| 1.7 | Tier A, photos | [src/cozmo/ingest/learned.py](../src/cozmo/ingest/learned.py) | MASt3R metric multi-view reconstruction, run locally and disclosed. Ceiling height measured; no closed polygon on our captures | **partial** runs end to end, misses the ±8% gate |
+| 1.8 | Tier B, handheld video | [src/cozmo/ingest/learned.py](../src/cozmo/ingest/learned.py) | frames sampled across the clip for baseline, then the same reconstruction as Tier A | **partial** runs end to end, misses the ±8% gate |
 | 1.9 | Tier C, depth, poses, intrinsics | [src/cozmo/ingest/lidar.py](../src/cozmo/ingest/lidar.py) | 5 captures ingested end to end | **done** |
 
 ## Part 2, Output contract
@@ -35,11 +35,11 @@ omitted; a matrix that hides them is worth less than one that does not.
 | 2.2 | Walls | [src/cozmo/geometry/walls.py](../src/cozmo/geometry/walls.py) | fitted planes, per-wall planarity | **done** |
 | 2.3 | Ceiling height | [src/cozmo/geometry/height.py](../src/cozmo/geometry/height.py) | measurement + interval | **done** |
 | 2.4 | Floor area | [src/cozmo/geometry/room.py](../src/cozmo/geometry/room.py) | measurement + interval | **done** |
-| 2.5 | Openings |, | **not implemented** | **not done** |
-| 2.6 | Stitched multi-room plan, correct adjacency |, | 5 rooms measured **individually**; no stitch | **not done** |
-| 2.7 | Per-surface damage regions, class + metric extent |, | 2 classes staged and tape-measured; **detection not implemented** | **not done** |
-| 2.8 | Concealed-damage flags with the rule that fired |, | **not implemented** | **not done** |
-| 2.9 | Scope line items keyed to surfaces |, | **not implemented** | **not done** |
+| 2.5 | Openings | [src/cozmo/geometry/openings.py](../src/cozmo/geometry/openings.py) | ray traced: classifies each wall cell as seen-through, wall, or occluded, so furniture no longer reads as a hole. 0.8 cm mean width error on synthetic truth; on the real capture it finds the doorway but reads the clear opening (0.587 m) not the frame (0.958 m) | **partial** built and tested, gate not claimed |
+| 2.6 | Stitched multi-room plan, correct adjacency | [src/cozmo/geometry/spaces.py](../src/cozmo/geometry/spaces.py) | floor occupancy eroded until doorways sever, cores flooded back out; each room measured separately with its own interval. Hallway capture splits into 2 rooms with a doorway at 0.873 m [0.853, 0.893]; adjacency in `stitched_plan` | **done** |
+| 2.7 | Per-surface damage regions, class + metric extent | [src/cozmo/geometry/damage.py](../src/cozmo/geometry/damage.py) | two rules, metric extent from depth, opt-in via `--damage`. Off by default because it reported 79 regions on a clean control room | **partial** built and measured, not claimed |
+| 2.8 | Concealed-damage flags with the rule that fired | [src/cozmo/geometry/concealed.py](../src/cozmo/geometry/concealed.py) | 4 named rules over sensor confidence and range; `concealed_conditions[]` in every JSON. My room fires `low_confidence_surface` on 19% of scanned surface | **done** |
+| 2.9 | Scope line items keyed to surfaces | [src/cozmo/contract/scope.py](../src/cozmo/contract/scope.py) | floor covering, ceiling paint, wall paint net of openings, skirting; each inherits the interval of the dimension it came from | **done** |
 | 2.10 | Confidence interval on every measurement | [src/cozmo/types.py](../src/cozmo/types.py) | every `Measurement` carries `lo`/`hi` + provenance | **done** |
 | 2.11 | One command per capture | [src/cozmo/\_\_main\_\_.py](../src/cozmo/__main__.py) | `python -m cozmo run <capture>` | **done** |
 | 2.12 | JSON to a published schema | [src/cozmo/contract/schema.py](../src/cozmo/contract/schema.py) | `cozmo-plan/0.2` | **done** |
@@ -59,12 +59,12 @@ omitted; a matrix that hides them is worth less than one that does not.
 
 | # | Gate | Where scored | Status |
 |---|---|---|---|
-| 2.19 | Opening widths ≤2 cm on ≥85%, detection scored |, | **not done** no opening detection |
+| 2.19 | Opening widths ≤2 cm on ≥85%, detection scored | [src/cozmo/geometry/openings.py](../src/cozmo/geometry/openings.py), `tests/test_openings_rt.py` | **partial** detection built and scored. Meets the 2 cm gate on synthetic truth (0.8 cm mean, 1.3 cm worst); on the real capture it detects the doorway but measures the clear opening rather than the frame, so the gate is reported and not claimed |
 | 2.20 | Ceiling height ≤1.5 cm per room | `out/*.json` `gates[]` | **done** accuracy passes, precision does not |
 | 2.21 | Ceiling spread across repeat captures ≤1 cm | benchmark report | **done** reported, fails |
 | 2.22 | Repeatability, 1 cm or 0.5% per wall | benchmark report | **done** reported, fails |
 | 2.23 | Drift accountability + ablation | [src/cozmo/geometry/drift.py](../src/cozmo/geometry/drift.py) | `--ablate`; σ_step sweep | **done** |
-| 2.24 | Photo-tier whole-property stitch |, | **not done** |
+| 2.24 | Photo-tier whole-property stitch |, | **not done**. The stitch itself is built (2.6) and runs on LiDAR captures, but no photo capture reconstructs a closed room, so there is nothing to stitch at the photo tier |
 
 ## Part 3, Head to head
 

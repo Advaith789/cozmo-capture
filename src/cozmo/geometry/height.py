@@ -252,12 +252,21 @@ def ceiling_height(capture: Capture, method: str = "envelope",
         raise ValueError("could not separate floor and ceiling planes")
 
     if len(clouds) < 4:
+        # Too few clouds to resample, so the interval is the scale prior the
+        # ingest declared, propagated. It used to be a flat 7% here regardless
+        # of what the ingest said, which was fine for the two-view path it was
+        # written for and badly wrong for the learned tier, whose own measured
+        # error is nearer 13%. An interval narrower than the error it is meant
+        # to cover is the one thing worse than a wide one.
+        lo_f = float(capture.meta.get("scale_lo", 0.93))
+        hi_f = float(capture.meta.get("scale_hi", 1.07))
+        pct = max(1.0 - lo_f, hi_f - 1.0) * 100
         return Measurement(
-            value=point, lo=point * 0.93, hi=point * 1.07, unit="m",
+            value=point, lo=point * lo_f, hi=point * hi_f, unit="m",
             provenance=("depth:inferred", "pose:sfm",
                         f"scale:{capture.meta.get('scale_source', 'unknown')}",
                         f"method:{method}",
-                        "interval:scale_prior_±7pct"),
+                        f"interval:scale_prior_±{pct:.0f}pct"),
             n=len(clouds))
 
     rng = np.random.default_rng(seed)

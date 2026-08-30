@@ -180,3 +180,19 @@ def detect(frames, max_frames: int = 40) -> list[Damage]:
                           seen_in=len(c["items"]),
                           confidence=min(1.0, len(c["items"]) / 6.0)))
     return sorted(out, key=lambda x: -x.seen_in)
+
+
+def to_json(items: list[Damage]) -> list[dict]:
+    return [{
+        "class": d.kind,
+        "rule_fired": d.rule,
+        "width_cm": round(d.width_cm, 1),
+        "height_cm": round(d.height_cm, 1),
+        "area_cm2": round(d.area_cm2, 1),
+        "position_xyz_m": list(d.world),
+        "keyframes_agreeing": d.seen_in,
+        "confidence": round(d.confidence, 2),
+        "status": "EXPERIMENTAL: opt-in, off by default. Measured 79 false "
+                  "positives on a clean control room, so this is not claimed "
+                  "against any gate.",
+    } for d in items]

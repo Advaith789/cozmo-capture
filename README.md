@@ -44,14 +44,24 @@ less precise than the gate it was meant to certify, which is written up as a
 result rather than buried: see [technical-report.md](docs/technical-report.md)
 section 3.
 
-**Tiers A and B** run structure from motion plus a metric depth model and
-produce a reconstruction, but drift without bundle adjustment leaves the
-dimensions 3 to 4 times too large, so they are not claimed. Their dependencies
-live in `requirements-camera.txt` and are not needed for the core pipeline.
+**Tiers A and B** reconstruct with a learned multi-view model (MASt3R), run
+locally and disclosed. Classical matching could not do it: COLMAP registered 4
+photographs of 29, because a bedroom wall is large, flat, blank and dimly lit
+and there is nothing to match. The learned model does reconstruct, and camera
+height falls out at 1.54 m, which is where a phone is held. Ceiling height
+still reads 8 to 15% low and no photo capture recovers two opposing wall pairs,
+so no room polygon closes and the ±8% gate is missed. Both tiers report the
+ceiling height with an interval that covers their measured error, and say what
+they could not produce. Install with `bash scripts/setup_learned.sh`; nothing
+else in the pipeline needs it.
 
-**Not built:** Tier A and Tier B ingest (captured, unprocessed), opening
-detection, multi-room stitching, damage detection. These were scope decisions
-against a 48-hour budget and are listed in the compliance matrix.
+**Built since:** multi-room stitching (a capture spanning two rooms is now
+segmented and each room measured separately, with doorway widths), ray traced
+opening detection, and the damage detector behind `--damage`.
+
+**Still not claimed:** the opening-width gate, the photo-tier stitch, and
+damage detection, each for a measured reason rather than a scope decision.
+The compliance matrix gives the number in every case.
 
 ## On the day: the walk-in runbook
 

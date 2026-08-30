@@ -91,11 +91,51 @@ def room_json(room: Room) -> dict[str, Any]:
     }
 
 
+def stitched_plan(rooms: list[Room],
+                  stitched: dict[str, Any] | None) -> dict[str, Any]:
+    """The multi-room plan, when the capture actually held more than one room.
+
+    Adjacency is the doorway list from the floor segmentation: two rooms are
+    adjacent when their flooded regions share a seam wide enough to walk
+    through. That is a stronger claim than "their rectangles touch", which is
+    true of any two rooms in a badly split capture.
+    """
+    if not stitched:
+        return {
+            "spaces_found": len(rooms),
+            "rooms_measured": len(rooms),
+            "adjacency": [],
+            "status": "single-room capture; nothing to stitch",
+        }
+    return {
+        # These differ, and conflating them made the contract contradict
+        # itself: a capture can be segmented into three spaces of which only
+        # one closes a polygon, and the adjacency below is numbered by space,
+        # not by room measured.
+        "spaces_found": stitched["spaces"],
+        "rooms_measured": len(rooms),
+        "room_names": [r.name for r in rooms],
+        "adjacency": [{
+            "between": d["connects"],
+            "via": "doorway",
+            "clear_width_m": d["clear_width_m"],
+            "ci_low": d["ci_low"],
+            "ci_high": d["ci_high"],
+            "centre_xz": d["centre_xz"],
+        } for d in stitched["doorways"]],
+        "method": stitched["note"],
+        "status": "segmented from one capture by eroding the floor occupancy "
+                  "until doorways sever, then flooding the cores back out",
+    }
+
+
 def build(capture: Capture, rooms: list[Room],
           gates: list[dict[str, Any]] | None = None,
           notes: list[str] | None = None,
           scope_items: list[dict[str, Any]] | None = None,
-          concealed: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+          concealed: list[dict[str, Any]] | None = None,
+          stitched: dict[str, Any] | None = None,
+          damage: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     return {
         "schema": SCHEMA_VERSION,
         "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -108,16 +148,15 @@ def build(capture: Capture, rooms: list[Room],
             "tracking_segments": capture.meta.get("tracking_segments"),
         },
         "rooms": [room_json(r) for r in rooms],
-        "stitched_plan": {
-            "rooms": len(rooms),
-            "adjacency": [],
-            "status": "single-room capture; adjacency requires a multi-room "
-                      "capture and opening detection",
-        },
+        "stitched_plan": stitched_plan(rooms, stitched),
         "damage": {
-            "regions": [],
-            "status": "detector built and measured; not shipped because it "
-                      "could not separate a real defect from surface texture",
+            "regions": damage or [],
+            "status": ("opt-in via --damage; measured 79 false positives on a "
+                       "clean control room, so it is off by default and "
+                       "claimed against no gate"
+                       if damage is None else
+                       "EXPERIMENTAL, opt-in: every region is a candidate for "
+                       "a human to confirm, not a finding"),
         },
         "concealed_conditions": concealed or [],
         "scope_line_items": scope_items or [],

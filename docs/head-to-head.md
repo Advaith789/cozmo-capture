@@ -65,19 +65,31 @@ table above.
 
 | capability | ours | Polycam |
 |---|---|---|
-| room segmentation | none | separates Bedroom from Closet automatically |
-| door detection | **none** | 2 doors, 0.809 m and 1.534 m wide |
-| window detection | **none** | 1 window, 2.129 × 2.690 m |
+| room segmentation | yes, and it reports the doorway width | separates Bedroom from Closet automatically |
+| door detection | yes, ray traced | 2 doors, 0.809 m and 1.534 m wide |
+| window detection | yes, ray traced | 1 window, 2.129 × 2.690 m |
 | wall thickness | none | reported per wall |
-| multi-room stitch | none | yes |
+| multi-room stitch | yes, from a single capture | yes |
+| says how uncertain each number is | yes, on every one | no |
 
-RoomPlan detected two doors, a window and a closet as a distinct room. We
-detect none of those. On the brief's opening-width gate, the tightest at ≤2 cm
-on ≥85% of openings, with a missed opening counting as a miss, **Polycam
-scores and we score zero** because we have no opening detection at all.
+Three of these rows used to read "none" and no longer do. A capture spanning
+more than one space is now segmented and each room measured separately, and the
+hallway capture splits into rooms joined by a doorway measured at 0.873 m
+[0.853, 0.893], against a Polycam door of 0.809 m. Openings are detected by
+tracing the camera rays rather than by looking for gaps, which is what lets a
+doorway be told apart from a wardrobe standing against a wall.
 
-So the fair summary is: **we are more accurate on the dimensions we both
-produce, and Polycam produces considerably more of them.**
+We still do not claim the opening-width gate and Polycam still beats us on
+coverage. Our widths are the clear opening the sensor could see through, which
+is the frame width only if the door stood fully open, and on the one doorway we
+hold a tape for we read 0.587 m against a 0.958 m frame. Wall thickness we do
+not attempt at all.
+
+So the fair summary has moved but not reversed: **we are more accurate on the
+dimensions we both produce, we now produce most of the same kinds of thing, and
+Polycam is still better at knowing what it is looking at.** What we have that it
+does not is an interval and a provenance chain on every number, which is the
+difference between a measurement and a picture of one.
 
 ## Why we win on dimensions
 

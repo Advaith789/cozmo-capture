@@ -203,3 +203,34 @@ def to_world_points(frame: PosedFrame, min_confidence: int = 2,
 
     R, t = frame.T_wc[:3, :3], frame.T_wc[:3, 3]
     return pts @ R.T + t
+
+
+def to_world_graded(frame: PosedFrame, max_range: float = 8.0):
+    """World points with their confidence and range attached.
+
+    Geometry and opening detection want different points from the same frame.
+    Wall fitting wants only the confident, close returns, because a wall's
+    position should not be argued for by a noisy sample at six metres. Opening
+    detection wants the opposite: the whole point of a doorway is that the
+    sensor saw *through* it, and what it saw through it is far away, off axis
+    and low confidence, which is exactly what the strict filter throws out.
+    Filtering at 5 m and confidence 2 left no see-through evidence at all and
+    the detector found nothing.
+
+    Returning both from one back-projection rather than calling this twice,
+    because on 160 frames the projection is most of the cost.
+    """
+    d = frame.depth
+    mask = np.isfinite(d) & (d > 0) & (d <= max_range)
+    if not mask.any():
+        return np.empty((0, 3)), np.empty(0), np.empty(0)
+
+    v, u = np.nonzero(mask)
+    z = d[v, u]
+    conf = (frame.confidence[v, u] if frame.confidence is not None
+            else np.full(len(z), 2))
+    fx, fy = frame.K[0, 0], frame.K[1, 1]
+    cx, cy = frame.K[0, 2], frame.K[1, 2]
+    pts = np.stack([(u - cx) * z / fx, -(v - cy) * z / fy, -z], axis=1)
+    R, t = frame.T_wc[:3, :3], frame.T_wc[:3, 3]
+    return pts @ R.T + t, conf, z

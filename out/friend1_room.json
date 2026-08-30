@@ -1,6 +1,6 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-29T23:49:05+00:00",
+  "generated": "2026-08-30T03:30:04+00:00",
   "capture": {
     "source": "8_29_2026 - Friend - 1 Room.zip",
     "tier": "C",
@@ -11,7 +11,7 @@
   },
   "rooms": [
     {
-      "name": "friend1_room",
+      "name": "friend1",
       "footprint": [
         [
           2.0822,
@@ -194,15 +194,15 @@
       "openings": [
         {
           "wall_index": 0,
-          "kind": "window",
-          "width_m": 1.6,
-          "height_m": 1.4,
-          "sill_m": 0.96,
+          "kind": "door",
+          "width_m": 1.675,
+          "height_m": 2.34,
+          "sill_m": 0.04,
           "width_ci": [
-            1.56,
-            1.64
+            1.655,
+            1.695
           ],
-          "border_confidence": 1.0,
+          "border_confidence": 0.76,
           "provenance": [
             "depth:measured",
             "method:wall_plane_hole",
@@ -210,14 +210,14 @@
           ]
         },
         {
-          "wall_index": 1,
-          "kind": "door",
-          "width_m": 1.0,
-          "height_m": 2.52,
-          "sill_m": 0.0,
+          "wall_index": 2,
+          "kind": "window",
+          "width_m": 0.941,
+          "height_m": 1.6,
+          "sill_m": 0.96,
           "width_ci": [
-            0.974,
-            1.026
+            0.921,
+            0.961
           ],
           "border_confidence": 1.0,
           "provenance": [
@@ -228,15 +228,15 @@
         },
         {
           "wall_index": 2,
-          "kind": "window",
-          "width_m": 0.84,
-          "height_m": 1.56,
-          "sill_m": 1.04,
+          "kind": "door",
+          "width_m": 0.92,
+          "height_m": 0.86,
+          "sill_m": 0.02,
           "width_ci": [
-            0.8,
-            0.84
+            0.9,
+            0.94
           ],
-          "border_confidence": 1.0,
+          "border_confidence": 0.82,
           "provenance": [
             "depth:measured",
             "method:wall_plane_hole",
@@ -249,11 +249,11 @@
   "stitched_plan": {
     "rooms": 1,
     "adjacency": [],
-    "status": "single-room capture; adjacency requires a multi-room capture and opening detection"
+    "status": "single-room capture; nothing to stitch"
   },
   "damage": {
     "regions": [],
-    "status": "detector built and measured; not shipped because it could not separate a real defect from surface texture"
+    "status": "opt-in via --damage; measured 79 false positives on a clean control room, so it is off by default and claimed against no gate"
   },
   "concealed_conditions": [
     {
@@ -296,12 +296,12 @@
     {
       "surface": "walls",
       "item": "wall paint, net of openings",
-      "quantity": 36.503,
-      "ci_low": 36.362,
-      "ci_high": 36.643,
+      "quantity": 36.357,
+      "ci_low": 36.217,
+      "ci_high": 36.497,
       "unit": "m2",
       "basis": "perimeter x ceiling height, less detected openings",
-      "note": "3 opening(s) subtracted, 6.07 m2; opening detection is experimental"
+      "note": "3 opening(s) subtracted, 6.22 m2; opening detection is experimental"
     },
     {
       "surface": "perimeter",
@@ -347,10 +347,8 @@
     }
   ],
   "known_limitations": [
-    "This capture appears to span more than one space; the dimensions describe the scanned envelope, not a single room.",
-    "Opening detection is EXPERIMENTAL and is not claimed against the opening-width gate: widths vary by up to a factor of two across frame counts, against a 2 cm gate.",
-    "Damage regions not implemented.",
-    "Single-room capture: no stitched multi-room plan or adjacency.",
-    "Tiers A and B ingest not implemented."
+    "Opening detection is EXPERIMENTAL and is not claimed against the opening-width gate. It measures the clear opening the sensor could see through at capture time, which equals the frame width only if the door stood fully open. On the one doorway we hold a tape for it read 0.587 m against a 0.958 m frame, and a partly open door and a measurement error are not separable without a controlled re-capture. The interval quoted is the precision of the see-through measurement, not the uncertainty in the frame width.",
+    "Damage detection is opt-in via --damage and is not claimed against any gate: it reported 79 regions on a clean control room.",
+    "Single-room capture: one room, so no adjacency to report."
   ]
 }

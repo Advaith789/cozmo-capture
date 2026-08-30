@@ -31,3 +31,4 @@ captures/
 # os
 .DS_Store
 .cache/
+vendor/

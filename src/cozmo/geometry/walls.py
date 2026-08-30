@@ -181,12 +181,43 @@ def detect(points: np.ndarray, floor_y: float, ceiling_y: float,
     offsets are. Reusing the axes makes resampling affordable.
     """
     xz = wall_band(points, floor_y, ceiling_y)
+    # A region can be too thin to hold a wall band at all: segmentation may
+    # hand us a two square metre corner, and the orientation search then
+    # reduces over an empty array and raises. Declining is the right answer,
+    # and the caller already knows what to do with a room it cannot fit.
+    if len(xz) < 200:
+        return None
     if axes is None:
         theta_deg, a, b = find_orientation(xz)
     else:
         a, b = axes
     return RoomAxes(theta_deg=theta_deg, axis_a=a, axis_b=b,
                     walls_a=find_walls(xz, a), walls_b=find_walls(xz, b))
+
+
+def scaled(base: RoomAxes, factor: float) -> RoomAxes:
+    """The same room under a uniform change of scale.
+
+    The camera tiers do not know their own scale to better than the prior the
+    ingest declares, and that prior swamps every other source of error, so the
+    interval is the prior propagated through the geometry. Propagating it by
+    re-fitting the walls on a scaled cloud looks reasonable and cannot work: a
+    scaled cloud's projections move by up to 18% of the room, which is half a
+    metre, while the fitter looks for points within 6 cm of the offset it was
+    given. It matched nothing, every draw came back empty, and the camera tiers
+    silently reported a fixed fallback interval instead of a propagated one.
+
+    Under a uniform scaling a plane at offset d moves to offset s*d exactly, so
+    there is nothing to fit. This is the closed form of what that loop was
+    trying to approximate.
+    """
+    def s(ws: list[Wall]) -> list[Wall]:
+        return [Wall(normal=w.normal, offset=w.offset * factor,
+                     n_points=w.n_points, residual_cm=w.residual_cm * factor)
+                for w in ws]
+    return RoomAxes(theta_deg=base.theta_deg, axis_a=base.axis_a,
+                    axis_b=base.axis_b, walls_a=s(base.walls_a),
+                    walls_b=s(base.walls_b))
 
 
 def span(walls: list[Wall]) -> float | None:
@@ -273,8 +304,13 @@ def spans_multiple_spaces(points: np.ndarray, floor_y: float,
 
     A real room's floor is continuous. Two rooms joined by a doorway are two
     dense regions with a thin neck between them, so a run of near-empty bins
-    across the floor is the signature. Reported rather than silently split:
-    segmenting the rooms properly is the multi-room stitch, which is unbuilt.
+    across the floor is the signature.
+
+    This is now a cheap first look rather than the last word: `geometry.spaces`
+    does the actual segmentation, and the pipeline measures each room it finds
+    separately. This stays because it is a projection along two axes and costs
+    almost nothing, which makes it a useful sanity check on a segmentation that
+    grids the whole floor.
     """
     y = points[:, 1]
     floor = points[np.abs(y - floor_y) < floor_slab][:, [0, 2]]
