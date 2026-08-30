@@ -70,7 +70,7 @@ omitted; a matrix that hides them is worth less than one that does not.
 
 | # | Requirement | File | Artifact | Status |
 |---|---|---|---|---|
-| 3.1 | Our LiDAR output vs one consumer app on 2 rooms | [docs/benchmark-report.md](benchmark-report.md) | Polycam Floorplan (RoomPlan) v6.0.21; **beat 4 of 4 dimensions** | **partial** 1 room, brief asks 2 |
+| 3.1 | Our LiDAR output vs one consumer app on 2 rooms | [docs/benchmark-report.md](benchmark-report.md) | Polycam Floorplan (RoomPlan) v6.0.21, both exports submitted; **beat 8 of 8 dimensions across 2 rooms** against a 70% bar | **done** |
 | 3.2 | Name the app and version | [docs/benchmark-report.md](benchmark-report.md) | Polycam Floorplan mode (RoomPlan), **v6.0.21** | **done** |
 
 ## Part 4, Fix loop

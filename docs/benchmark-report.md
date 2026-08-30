@@ -428,40 +428,65 @@ tops, so the ceiling is being seen and not inferred.
 ## Head to head against the incumbent
 
 **Incumbent:** Polycam, Floorplan mode (Apple RoomPlan underneath), free tier,
-**version 6.0.21**. Export submitted as
-`myroom/floorplan/8_29_2026 - Floorplan - My room.zip`; the comparison is drawn
-from its `optimized_roomplan.json`. Ours is `out/myroom2.json`.
+**version 6.0.21**. Exports submitted as
+`myroom/floorplan/8_29_2026 - Floorplan - My room.zip` and
+`myroom/floorplan/8_29_2026 - friend 1 room.zip`; both comparisons are drawn
+from `optimized_roomplan.json`. Ours are `out/myroom2.json` and
+`out/friend1_room.json`. **Two rooms, as the brief requires.**
 
-| dimension | tape | **ours** | error | Polycam | error | result |
+**My room**, against tape:
+
+| dimension | tape | **ours** | error | Polycam | error | |
 |---|---|---|---|---|---|---|
 | ceiling height | 2.9705 m | **2.9680 m** | **-0.2 cm** | 2.9382 m | -3.2 cm | **win** |
 | door wall | 3.0344 m | **3.0372 m** | **+0.3 cm** | 3.1185 m | +8.4 cm | **win** |
 | other wall | 3.0411 m | **3.0524 m** | **+1.1 cm** | 3.1393 m | +9.8 cm | **win** |
 | floor area | 9.2279 m² | **9.271 m²** | **+0.5%** | 9.790 m² | +6.1% | **win** |
 
-**Four of four shared dimensions, against a bar of 70%.** Our largest error is
-1.1 cm; Polycam's smallest is 3.2 cm.
+**Friend 1 room**, against tape measured after the pipeline was frozen:
+
+| dimension | tape | **ours** | error | Polycam | error | |
+|---|---|---|---|---|---|---|
+| ceiling height | 3.0020 m | **2.9873 m** | **-1.5 cm** | 2.9580 m | -4.4 cm | **win** |
+| long wall | 3.7636 m | **3.7654 m** | **+0.2 cm** | 3.9072 m | +14.4 cm | **win** |
+| short wall | 3.3620 m | **3.3603 m** | **-0.2 cm** | 3.4714 m | +10.9 cm | **win** |
+| floor area | 12.6532 m² | **12.653 m²** | **-0.0%** | 13.564 m² | +7.2% | **win** |
+
+**Eight of eight shared dimensions across two rooms, against a bar of 70%.** Our
+largest error is 1.5 cm; Polycam's smallest is 3.2 cm.
+
+Two things about that table are worth stating rather than leaving to be found.
+**The wall pairing is the one that flatters Polycam.** Neither output labels its
+walls, so pairing to the tape is by best correspondence; on friend 1 the
+alternative pairing gives Polycam -29.2 cm and +54.5 cm instead of +14.4 and
++10.9. **And our floor area is not independent** of our own wall lengths, since
+it is derived from the same fitted planes; the tape figure is likewise the
+product of two tape readings, so that row confirms the walls rather than adding
+evidence.
 
 Accuracy is not the whole comparison:
 
 | capability | ours | Polycam |
 |---|---|---|
-| room segmentation | yes, with doorway widths | yes |
-| door and window detection | yes, ray traced, not claimed | 2 doors, 1 window, dimensioned |
-| wall thickness | no | yes |
+| room segmentation | yes, with doorway widths | yes, and it split friend 1 where we did not |
+| door and window detection | yes, ray traced, not claimed | 3 doors, 2 windows, dimensioned |
+| wall thickness | no | yes, 0.1 m per wall |
 | multi-room stitch | yes, from one capture | yes |
 | an interval on every number | **yes** | no |
 
-Polycam is better at knowing what it is looking at. We are more accurate on the
-dimensions we both produce, and we are the only one of the two that says how
-uncertain each number is.
+Polycam is better at knowing what it is looking at, and on friend 1 it did
+something we did not: it split the room into a 13.56 m² bedroom and a 0.79 m²
+alcove, where our segmentation kept them as one space because the barrier
+between them is not walled to the ceiling. Neither answer is obviously wrong and
+we hold no ground truth for the boundary.
 
-**Caveats, stated rather than buried.** This covers **one room; the brief asks
-for two**, and that row is short: we now hold tape for a second room but have no
-Polycam export of it. The two captures are different sessions minutes apart, not
-shared frames. Wall pairing is by best correspondence since neither output
-labels its walls; the alternative pairing gives Polycam +12.1 and +11.9 cm and
-does not change the outcome.
+Its opening detection is also not uniformly better than ours. Its three doors,
+0.858, 0.695 and 0.890 m, are plausible; its two windows are 2.698 m and 1.874 m
+wide and 2.71 m and 2.61 m tall, which in a room with a 3.00 m ceiling is not a
+window. We report fewer openings and claim none of them.
+
+We are more accurate on every dimension we both produce, and we are the only one
+of the two that says how uncertain each number is.
 
 ## Appendix: the export format, verified rather than assumed
 

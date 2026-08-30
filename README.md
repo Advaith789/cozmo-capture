@@ -27,7 +27,7 @@ The eight deliverables, in the brief's own order:
 | 2 | Capture route, one page, + device matrix | [docs/capture-protocol.md](docs/capture-protocol.md) |
 | 3 | Repo and README | this file |
 | 4 | Reproduction bundle | [scripts/benchmark.sh](scripts/benchmark.sh) |
-| 5 | Benchmark report, all tiers + head-to-head | [docs/benchmark-report.md](docs/benchmark-report.md) |
+| 5 | Benchmark report, all tiers + head-to-head (2 rooms) | [docs/benchmark-report.md](docs/benchmark-report.md) |
 | 6 | Fix loop bundle | [docs/fix-loop.md](docs/fix-loop.md) |
 | 7 | Technical report, max 6 pages | [docs/technical-report.md](docs/technical-report.md) |
 | 8 | Raw benchmark data | `myroom/`, 1.3 GB, delivered separately |
