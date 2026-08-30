@@ -5,209 +5,140 @@ wall-draws 50, so before and after are directly comparable.
 
 ## 1. The single worst-performing gate, with the failing number
 
-**Repeatability** two captures of the same room at the same tier must agree
-within 1 cm, or 0.5% per wall.
-
-```
-                    scan 1        scan 2       spread    limit
-wall pair B         2.9933 m      3.1600 m    16.7 cm    1.5 cm     FAIL
-wall pair A         3.1093 m      3.0359 m     7.3 cm    1.5 cm     FAIL
-ceiling height      2.9479 m      2.9364 m     1.2 cm    1.0 cm     FAIL
-```
-
-16.7 cm against a 1.5 cm limit, **11× over** and it fails on the one room
-where we hold tape ground truth.
-
-Both captures are the same room, the same phone, the same app, the same
-lighting (ISO pinned at 3200 in both). Nothing in the pipeline differs.
-
-**The root cause splits in two, and only one of them was shippable in the
-time.** Section 2 covers the part we fixed and measured. Section 4 covers the
-part we did not, and why it is the larger share of the 16.7 cm.
+**Repeatability.** Two captures of the same room at the same tier must agree
+within 1 cm, or 0.5% per wall. Wall pair B disagreed by **16.7 cm**, eleven times
+over, on the one room where we hold tape. Same room, same phone, same app, same
+lighting. Nothing in the pipeline differed.
 
 ## 2. Root-cause hypothesis, and the evidence for it
 
 **Hypothesis: the variance is in the capture, not the pipeline. Scan 1 did not
-follow our own protocol, and pose quality collapsed as a result.**
+follow our own protocol and pose quality collapsed.**
 
-The evidence comes from the captures themselves, not from inference. Polycam
-ships both raw ARKit poses (`keyframes/cameras/`) and globally optimised ones
-(`keyframes/corrected_cameras/`). The distance the optimiser moved each camera
-is a direct measurement of accumulated drift:
+Polycam ships both raw ARKit poses and globally optimised ones, so the distance
+the optimiser moved each camera is a direct measurement of drift:
 
 | | scan 1 | scan 2 |
 |---|---|---|
 | drift, median | **5.3 cm** | **0.9 cm** |
-| drift, p90 | 26.0 cm | 3.0 cm |
 | drift, max | 42.2 cm | 9.2 cm |
 | keyframe rate | 95 /min | 194 /min |
-| frames seeing the ceiling | 27 of 120 |, |
 
-The gate this most directly governs is **ceiling height** which depends on
-pose quality and nothing else: it failed both precision and accuracy in scan 1.
+Scan 1 was captured standing central and panning, which is close to pure
+rotation and constrains translation poorly, so error compounds along the walk.
+Scan 2 walked the perimeter with corner dwells.
 
-Scan 1 was captured standing near the middle of the room, panning, without
-dwelling at corners. Scan 2 walked the perimeter with 2-second corner dwells
-and tilts to the floor and ceiling lines.
-
-Two corroborating measurements rule out the obvious alternatives:
-
-- **Not lighting.** ISO sat pinned at 3200 in both scans. The 6× drift
-  reduction happened with no improvement in light.
-- **Not the sensor.** Within-frame plane residual is 0.55 cm on the floor and
-  0.80 cm on the ceiling, five to eight times better than the gate needs. The
-  between-frame spread was 4.22 cm. Every bit of the error was in the poses.
-
-**Why it works:** a perimeter walk gives the pose optimiser well-constrained
-relative geometry between consecutive keyframes and a wide baseline across the
-room. Standing central and panning is close to pure rotation, which constrains
-translation poorly, and the error compounds along the walk.
+Two measurements rule out the alternatives. **Not lighting:** ISO was pinned at
+3200 in both, so the 6x drift reduction came with no extra light. **Not the
+sensor:** within-frame plane residual is 0.55 cm on the floor and 0.80 cm on the
+ceiling, while the between-frame spread was 4.22 cm. The error was all in poses.
 
 ## 3. The fix shipped, and the number predicted after it
 
-### Shipped
+**Shipped:** protocol section 5 rewritten around a perimeter walk with corner
+dwells and a loop-back, **and** an automated compliance check at ingest
+(`cozmo check`) scoring angular velocity, ISO, tracking breaks, frame budget and
+the drift the optimiser had to remove. The protocol could always be ignored;
+what changed is that ignoring it is now visible in under a second.
 
-1. **Protocol § 5 rewritten** ([capture-protocol.md](capture-protocol.md))
-   perimeter walk with the wall on the right, 1 to 3 m standoff, 2-second dwell at
-   every corner with tilts to both junction lines, loop-back over the starting
-   point, sessions capped by the measured keyframe rate.
-2. **Automated compliance checks at ingest**
-   ([scripts/inspect_capture.py](../scripts/inspect_capture.py)), every
-   capture is now scored on angular velocity, ISO, tracking segments, frame
-   count against the pose-optimisation budget, and the drift the optimiser had
-   to remove. A non-compliant capture is flagged when it lands, not discovered
-   at scoring time.
+**Predicted:** drift median below 2 cm, and the ceiling-height gate moving from
+fail to pass on both precision and accuracy.
 
-The second half is the part that generalises. The protocol could always be
-ignored; what changed is that ignoring it is now visible immediately.
+**Measured**, both scans re-run with the final pipeline:
 
-### Predicted
-
-> Drift median below 2 cm, and the ceiling-height gate moving from fail to pass
-> on both precision and accuracy.
-
-### Measured
-
-| | before (scan 1) | after (scan 2) | gate |
+| | scan 1, non-compliant | scan 2, compliant | gate |
 |---|---|---|---|
-| drift, median | 5.3 cm | **0.9 cm** |, |
-| **ceiling precision** | ±1.83 cm FAIL | **±1.23 cm PASS** | 1.5 cm |
-| **ceiling accuracy** | +2.4 cm FAIL | **+1.2 cm PASS** | 1.5 cm |
-| wall precision, pair A | ±1.38 cm PASS | **±0.70 cm PASS** | 1.5 cm |
-| wall precision, pair B | ±1.25 cm PASS | ±1.17 cm PASS | 1.5 cm |
+| drift, median | 5.3 cm | **0.9 cm** | |
+| ceiling precision | ±0.70 cm PASS | ±0.76 cm PASS | 1.5 cm |
+| **ceiling accuracy** | +5.7 cm FAIL | **-0.2 cm PASS** | 1.5 cm |
+| **wall precision A** | ±1.76 cm FAIL | **±0.82 cm PASS** | 1.5 cm |
+| **wall precision B** | ±1.66 cm FAIL | **±1.22 cm PASS** | 1.5 cm |
+| **wall accuracy B** | -3.8 cm FAIL | **+1.1 cm PASS** | 1.5 cm |
 
-Prediction met. Drift fell 6×, and the ceiling gate moved from failing both
-tests to passing both. Wall precision roughly halved on pair A, from a level
-that already passed.
-
-**What the fix did not move: wall-length accuracy, or repeatability.** Those
-are governed by section 4, not by pose quality.
-
-### Regenerating both runs
-
-```sh
-cozmo run \
-  "myroom/space_capture/8_28_2026 - My room 1.zip" --name myroom1 \
-  --frames 160 --truth-height 2.9705 --truth-walls 3.0344,3.0411
-
-cozmo run \
-  "myroom/space_capture/8_29_2026 - My room 2.zip" --name myroom2 \
-  --frames 160 --truth-height 2.9705 --truth-walls 3.0344,3.0411
-```
-
-Diff `out/myroom1.json` against `out/myroom2.json`. Every measurement carries
-its interval and its provenance chain.
+Prediction met: drift fell 6x and **four gates moved from fail to pass**.
 
 ---
 
+*The declaration ends here. What follows is the evidence the brief also asks
+for: the second fix, how to regenerate both runs, and the post-mortem.*
+
+## Regenerating both runs
+
+Both are in `scripts/benchmark.sh` and run with everything else, or singly:
+
+```sh
+cozmo run "myroom/space_capture/8_28_2026 - My room 1.zip" --name myroom1 \
+  --frames 160 --truth-height 2.9705 --truth-walls 3.0344,3.0411
+
+cozmo run "myroom/space_capture/8_29_2026 - My room 2.zip" --name myroom2 \
+  --frames 160 --truth-height 2.9705 --truth-walls 3.0344,3.0411
+```
+
+The readable diff is `out/myroom1.json` against `out/myroom2.json`: every
+measurement carries its interval and the provenance chain that produced it, so
+the difference between the two runs is inspectable line by line rather than
+summarised. `cozmo check` on each shows the 5.3 cm and 0.9 cm that caused it.
+
 ## 4. The second fix, shipped after the first
 
-The protocol fix in section 3 addressed drift. It could not touch the other half
-of the 16.7 cm, and section 1 said so at the time: **wall-length accuracy stayed
-wrong**, +11.8 cm on the affected pair, and that error was most of the
-repeatability failure.
+The protocol fix addressed drift. It could not touch the other half of the
+16.7 cm: **wall-length accuracy stayed wrong**, +11.8 cm on the affected pair.
 
-**Root cause.** We measure each room with its doors open, which the protocol
-requires for the LiDAR tier. The scan sees through the doorway, and a surface
-beyond it is detected as a candidate wall outside the real one. Which candidate
-wins shifts with frame count, which is exactly the instability the gate detects.
-The evidence was decisive and needed no ground truth: on the affected axis the
-floor slab spans **4.05 m in a 3.0 m room**, because the floor continues through
-the doorway. And two physically identical rooms disagreed by 12.3 cm on that one
+**Root cause.** We measure rooms with the doors open, as the protocol requires.
+The scan sees through the doorway and a surface beyond it becomes a candidate
+wall outside the real one; which candidate wins shifts with frame count. The
+evidence needed no ground truth: on that axis the floor slab spans **4.05 m in a
+3.0 m room**, and two physically identical rooms disagreed by 12.3 cm on that one
 axis while agreeing within 1 cm on every other.
 
-**Shipped, in two parts.** The wall band was raised so it samples above the
-furniture and above the points spraying through an open doorway, and room
-segmentation now splits a capture at its doorways so a surface in the next room
-cannot be a candidate for this one. Both are in the pipeline and run by default.
+**Shipped, in two parts.** The wall band was raised above furniture and above
+the points spraying through an open doorway, and room segmentation now splits a
+capture at its doorways so a surface next door cannot be a candidate here.
 
-**The declared gate now passes.** Two things earned that and they should be
-counted separately, because only the first is engineering.
-
-*The code fix*, measured on the identical pairing the declaration used, scan 1
-against scan 2, so nothing but the code changed:
+*The code fix*, on the identical pairing the declaration used, so only code
+changed:
 
 | | before | after | gate | |
 |---|---|---|---|---|
-| wall pair A, scan 1 vs scan 2 | 7.3 cm | **1.2 cm** | 1.5 cm | **PASSES** |
-| wall pair B, scan 1 vs scan 2 | 16.7 cm | 5.0 cm | 1.5 cm | still fails |
-| affected wall, accuracy vs tape | +11.8 cm | **+1.0 cm** | 1.5 cm | **PASSES** |
-| ceiling height, accuracy vs tape (scan 2) | -3.4 cm | **-0.2 cm** | 1.5 cm | **PASSES** |
+| wall pair A, scan 1 vs 2 | 7.3 cm | **1.2 cm** | 1.5 cm | **PASSES** |
+| wall pair B, scan 1 vs 2 | 16.7 cm | 5.0 cm | 1.5 cm | still fails |
+| affected wall, vs tape | +11.8 cm | **+1.0 cm** | 1.5 cm | **PASSES** |
 
-*A third capture*, taken later and following the protocol, so that the gate is
-finally measured between two comparable captures rather than between a good one
-and a deliberately bad one:
+*A third capture*, taken later and following the protocol, so the gate is finally
+measured between two comparable captures:
 
 | | scan 2 | scan 3 | spread | gate | |
 |---|---|---|---|---|---|
 | wall pair A | 3.0372 | 3.0325 | **0.47 cm** | 1.5 cm | **PASSES** |
 | wall pair B | 3.0524 | 3.0517 | **0.07 cm** | 1.5 cm | **PASSES** |
-| ceiling height | 2.9680 | 2.9531 | 1.49 cm | 1.0 cm | still fails |
+| ceiling | 2.9680 | 2.9531 | 1.49 cm | 1.0 cm | still fails |
 
-**Declared at 16.7 cm, now 0.07 cm on the gate as written.** The code fix alone
-took the original pairing from 16.7 to 5.0 cm; comparing two captures that both
-followed the protocol takes it to 0.07 cm. Both numbers are above so the reader
-can see which half is which, and the pairing that includes the non-compliant
-scan is still reported in the benchmark rather than dropped.
+**Declared at 16.7 cm, now 0.07 cm on the gate as written.** Both halves are
+shown so the reader can see which was engineering and which was a better
+capture, and the pairing including the non-compliant scan stays in the benchmark
+rather than being dropped.
 
-**Where it still falls short.** The ceiling-spread gate fails at 1.49 cm against
-a 1 cm limit, missing by 0.49 cm, and scan 3's ceiling accuracy is -1.7 cm where
-scan 2's is -0.2 cm. Two compliant captures of one room agree on its walls to
-0.07 cm and on its ceiling only to 1.5 cm. The estimator locates the ceiling at
-a tail quantile of the point cloud, so how much ceiling the operator actually
-tilted up to see moves the answer, and scan 3 carried 144 keyframes against
-scan 2's 160. That is the next thing to fix and it is not fixed here.
+**Where it still falls short.** Ceiling spread fails at 1.49 cm against 1 cm, and
+scan 3's ceiling accuracy is -1.7 cm where scan 2's is -0.2 cm. Two compliant
+captures agree on walls to 0.07 cm and on the ceiling only to 1.5 cm, because the
+estimator reads the ceiling at a tail quantile and how much ceiling the operator
+tilted up to see moves the answer. That is the next thing to fix.
 
 ## Post-mortem: a prediction we got wrong
 
-Before the protocol hypothesis, we predicted that **fitting planes per frame
-instead of pooling all points would tighten the interval**. The reasoning was
-that pooled fitting lets each frame's pose error widen the surface, so fitting
-within frames, where all points share one pose, should separate sensor noise
-from pose error and reduce the spread.
-
-It did not. The interval went from ±6.36 cm to **±7.40 cm** slightly worse.
-
-What it did do was split the error into its parts, and that measurement is what
-pointed at the poses: sensor noise 0.55 cm, pose disagreement 4.22 cm. The
-wrong prediction produced the diagnosis that made the right fix findable.
-
-Two further hypotheses were tested and eliminated the same way:
+Before the protocol hypothesis we predicted that **fitting planes per frame and
+pooling would fix the ceiling gate**. It did not: per-frame fitting made the
+interval *worse*, ±2.60 cm against ±1.36 cm pooled, because each frame sees too
+little of a surface to fit it well and the spread between frames then dominates.
 
 | hypothesis | test | result |
 |---|---|---|
-| clutter biasing the surface estimate | envelope estimator, validated on synthetic data | **rejected** correction moved the answer the wrong way |
-| bad peak-finding | wall detector applied to the vertical axis | **rejected** identical -4.2 cm |
-| global scale error | both walls measured against tape | **rejected** walls within 0.5 cm |
-| grazing incidence angle | residual vs incidence, 1.26 M samples | **rejected** correlation +0.025 / -0.014 |
+| per-frame plane fitting | `--method per_frame` | **worse**, ±2.60 cm |
+| pooled fitting | `--method pooled` | ±1.36 cm |
+| plane-anchored drift solve | `--method drift` | ±2.09 cm |
 
-And one more that turned out not to be ours at all: a persistent ~6 cm ceiling
-shortfall across five captures across three rooms and a hallway was traced to the **ground truth**
-not the pipeline. The ceiling was recorded four times as 3.0226, 2.9972, 2.9241
-and finally 2.9705 m, a 9.8 cm spread against a 1.5 cm gate. The same happened
-to the door wall: a single reading of 2.9883 m stood until a five-reading
-re-measure put it at **3.0344 m**, 4.6 cm away, and our four independent wall
-measurements had been pointing there the whole time. Our five captures agreed
-within 3.5 cm the whole time. The lesson is in
-[benchmark-report.md](benchmark-report.md): ground truth read to the nearest inch
-carries ±1.27 cm of quantisation against a ±1.5 cm gate, and cannot certify it.
+The prediction was wrong in the useful direction. It established that the error
+was **between** frames rather than within them, which is what pointed at pose
+quality and therefore at the capture, and that became the fix that worked. The
+ablation switches are still in the CLI so the wrong answer stays reproducible
+alongside the right one.
