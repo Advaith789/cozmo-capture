@@ -138,5 +138,65 @@ class Deterministic(unittest.TestCase):
         self.assertEqual(a["spans"], b["spans"])
 
 
+@unittest.skipUnless(HAVE, "needs numpy")
+class DriftAblation(unittest.TestCase):
+    """The drift gate requires an ablation, so the ablation has to run.
+
+    `--sigma-step 0` is the uncorrected case: the smoothness weight is
+    1/sigma_step, so zero ties every consecutive correction together and a
+    constant correction is none. It used to raise ZeroDivisionError, which
+    meant the ablation the brief scores did not execute at all.
+    """
+
+    def _obs(self, n=12, drift_cm=3.0):
+        """A drifting capture that sees the floor throughout and the ceiling late.
+
+        Both surfaces drifting together would be the wrong fixture: the height
+        is their difference, so a common drift cancels and no value of
+        sigma_step could change the answer. That invariance is a property the
+        solver is meant to have. What the correction actually earns you is the
+        case here, where the two surfaces are seen over different parts of the
+        walk and the drift between those parts does not cancel.
+        """
+        from cozmo.geometry.drift import PlaneObservation
+        obs = []
+        for i in range(n):
+            d = (i / (n - 1)) * drift_cm / 100.0      # a linear ramp of drift
+            obs.append(PlaneObservation(frame=i, surface="floor",
+                                        height=0.0 + d, sigma=0.005,
+                                        n_points=5000))
+            if i >= n // 2:                            # ceiling seen late only
+                obs.append(PlaneObservation(frame=i, surface="ceiling",
+                                            height=2.50 + d, sigma=0.005,
+                                            n_points=5000))
+        return obs
+
+    def test_zero_sigma_step_solves_instead_of_raising(self):
+        from cozmo.geometry.drift import solve
+        out = solve(self._obs(), 12, sigma_step=0.0)
+        self.assertTrue(np.isfinite(out["height"]))
+
+    def test_zero_sigma_step_is_the_uncorrected_case(self):
+        """Every per-frame correction should be the same value at the limit."""
+        from cozmo.geometry.drift import solve
+        out = solve(self._obs(), 12, sigma_step=0.0)
+        d = np.asarray(out["deltas"])
+        self.assertGreater(d.size, 0)
+        self.assertLess(float(np.ptp(d)), 1e-4,
+                        "corrections should be constant, i.e. no correction")
+
+    def test_the_sweep_is_monotone_in_effect(self):
+        """Larger sigma_step permits more correction, so the answer moves."""
+        from cozmo.geometry.drift import solve
+        obs = self._obs()
+        heights = [solve(obs, 12, sigma_step=s)["height"]
+                   for s in (0.0, 0.0005, 0.002, 0.01)]
+        self.assertGreater(max(heights) - min(heights), 1e-4,
+                           "the ablation must actually change something")
+        # With the correction off, the unmodelled drift leaks into the height.
+        # Letting it work should bring the answer back toward the truth.
+        self.assertLess(abs(heights[-1] - 2.50), abs(heights[0] - 2.50))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

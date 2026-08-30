@@ -154,7 +154,11 @@ def load(path: str | Path, max_points: int = 900_000) -> Capture:
         meta={})
 
     return Capture(
-        frames=[frame], tier="C", source=str(path),
+        # M, not C. This is the fallback, and a reader of the JSON has to be
+        # able to tell: it carries no per-frame data, so its intervals are
+        # assumed rather than bootstrapped, and calling it a LiDAR capture in
+        # the contract would hide exactly that.
+        frames=[frame], tier="M", source=str(path),
         meta={"loaded": 1, "total_keyframes": 1, "loop_closed": False,
               "tracking_segments": 1, "points": pts, "mesh_vertices": len(pts),
               "fallback": "mesh export, no per-frame data",

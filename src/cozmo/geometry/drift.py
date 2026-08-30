@@ -102,7 +102,14 @@ def solve(obs: list[PlaneObservation], n_frames: int,
     """Least-squares solve for per-frame corrections and the two plane heights.
 
     sigma_step: metres of drift permitted between consecutive keyframes.
-        Small values approach the uncorrected solution — that is the ablation.
+        Small values approach the uncorrected solution, and **zero is exactly
+        it**: the smoothness weight is 1/sigma_step, so as it falls the
+        consecutive corrections are tied ever harder together until they are
+        all equal, and a constant correction is no correction at all. That
+        limit is the ablation the drift gate requires, so it has to be a value
+        the solver accepts rather than a division by zero. `--sigma-step 0`
+        used to raise ZeroDivisionError, which meant the documented ablation
+        did not run.
     """
     if not obs:
         raise ValueError("no plane observations")
@@ -121,8 +128,11 @@ def solve(obs: list[PlaneObservation], n_frames: int,
         rows.append(r)
         rhs.append(-w * o.height)
 
-    # Temporal smoothness: consecutive corrections must not jump.
-    ws = 1.0 / sigma_step
+    # Temporal smoothness: consecutive corrections must not jump. At
+    # sigma_step = 0 the weight is infinite, which is represented by one large
+    # enough to pin the corrections together to well inside a micrometre and
+    # still leave the normal equations solvable.
+    ws = 1.0 / sigma_step if sigma_step > 0 else 1e9
     for i in range(1, n):
         r = np.zeros(n_unknown)
         r[i], r[i - 1] = ws, -ws

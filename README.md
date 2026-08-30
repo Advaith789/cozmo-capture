@@ -19,16 +19,20 @@ rendered plan, one command, with a bootstrapped interval on every number.
 Validated against tape in **two rooms**, run on five LiDAR captures across three
 rooms and a hallway, plus photo and video captures at tiers A and B.
 
-| Deliverable | Where | |
+The eight deliverables, in the brief's own order:
+
+| # | Deliverable | Where |
 |---|---|---|
-| Capture route + device matrix | [docs/capture-protocol.md](docs/capture-protocol.md) | done |
-| Compliance matrix | [docs/compliance-matrix.md](docs/compliance-matrix.md) | done |
-| Benchmark report | [docs/benchmark-report.md](docs/benchmark-report.md) | Tier C only |
-| Technical report | [docs/technical-report.md](docs/technical-report.md) | done |
-| Fix loop | [docs/fix-loop.md](docs/fix-loop.md) | done |
-| Head-to-head vs Polycam | [docs/head-to-head.md](docs/head-to-head.md) | 1 room |
-| Format verification | [docs/capture-bakeoff.md](docs/capture-bakeoff.md) | done |
-| Output contract | `out/*.json`, `out/*.svg` | done |
+| 1 | Compliance matrix | [docs/compliance-matrix.md](docs/compliance-matrix.md) |
+| 2 | Capture route, one page, + device matrix | [docs/capture-protocol.md](docs/capture-protocol.md) |
+| 3 | Repo and README | this file |
+| 4 | Reproduction bundle | [scripts/benchmark.sh](scripts/benchmark.sh) |
+| 5 | Benchmark report, all tiers + head-to-head | [docs/benchmark-report.md](docs/benchmark-report.md) |
+| 6 | Fix loop bundle | [docs/fix-loop.md](docs/fix-loop.md) |
+| 7 | Technical report, max 6 pages | [docs/technical-report.md](docs/technical-report.md) |
+| 8 | Raw benchmark data | `myroom/`, 1.3 GB, delivered separately |
+
+Output contract per capture: `out/*.json` and `out/*.svg`.
 
 **Headline result**, my room scan 2 against tape:
 
@@ -69,10 +73,10 @@ The compliance matrix gives the number in every case.
 
 ```sh
 # 1. the moment the capture lands, before anything else. Takes under a second.
-python -m cozmo check "<their-export>.zip"
+cozmo check "<their-export>.zip"
 
 # 2. if it says GO
-python -m cozmo run "<their-export>.zip" --name walkin
+cozmo run "<their-export>.zip" --name walkin
 ```
 
 `check` reads only metadata and a dozen frames, and answers GO or NO GO in
@@ -88,10 +92,13 @@ the pipeline on a capture that cannot support a measurement.
 **If Developer Mode was missed**, there is no raw export and the LiDAR tier has
 nothing to read. That used to be a total loss. It is now a fallback: ask for a
 plain mesh export instead (OBJ or PLY, no Developer Mode needed) and point the
-same command at it. Measured against tape on our own room the mesh path landed
-at -0.4, +0.5 and +1.5 cm, inside the gate on all three, in 1.3 seconds. What it
-cannot do is resample frames, so its intervals are assumed rather than measured
-and it says so.
+same command at it. Measured against tape on our own room the mesh path lands at
+**-0.2, +0.4 and +1.1 cm on accuracy, inside the gate on all three, in 1.9
+seconds**. Precision is a different story and fails: with no frames to resample
+there is no bootstrap, so the intervals are assumed (±2.9 cm) rather than
+measured, and the provenance says so rather than implying otherwise.
+`scripts/benchmark.sh` exports a point cloud and runs this path on it, so the
+numbers above are reproducible rather than remembered.
 
 `run` takes about 25 seconds and writes a JSON contract and a dimensioned SVG
 plan. It applies a rectangular-room prior only where the walls justify it, and
@@ -124,7 +131,7 @@ mid-walk, HEIC where JPEG was expected, EXIF stripped in transfer.
 
 The first real export disagreed with Polycam's published format in five places
 and carried nine undocumented per-frame fields. Findings are recorded in
-[docs/capture-bakeoff.md](docs/capture-bakeoff.md); the protocol's file
+[docs/benchmark-report.md](docs/benchmark-report.md); the protocol's file
 contract and session cap now come from that run, not from documentation.
 
 The depth decoder is hand-rolled PNG (no Pillow), so
@@ -219,8 +226,8 @@ shots in § 3.5 of the protocol exist to supply those edges.
 ### One command per capture
 
 ```sh
-PYTHONPATH=src .venv/bin/python -m cozmo measure myroom/8_28_2026.zip
-PYTHONPATH=src .venv/bin/python -m cozmo measure <capture> --ablate   # drift on/off
+cozmo measure myroom/8_28_2026.zip
+cozmo measure <capture> --ablate   # drift on/off
 ```
 
 Tier is detected from the input shape, not passed in, Tier C runs today, A and
@@ -233,7 +240,6 @@ B report that they are unimplemented rather than guessing.
 ```
 docs/
   capture-protocol.md    the one-page field sheet + device matrix   [step 3]
-  capture-bakeoff.md     export verification worksheet              [step 2]
 scripts/
   inspect_capture.py     read a raw export and report what it holds
 src/cozmo/
@@ -262,8 +268,21 @@ scripts/
 ```sh
 git clone https://github.com/Advaith789/cozmo-capture
 cd cozmo-capture
-python3 -m unittest discover -s tests    # nothing to install
+
+python3 -m unittest discover -s tests    # 69 tests, nothing installed, ~0.2s
+
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e .                          # Tier C: numpy, and the `cozmo` command
+python -m unittest discover -s tests      # same 69, now with numpy
+
+# Tiers A and B only. 2.7 GB of model weights, ~4 GB of disk, 8 GB of RAM.
+bash scripts/setup_learned.sh
 ```
+
+`pip install -e .` is what makes `cozmo check` and `cozmo run` work
+from any directory, which is the point: the walk-in runbook has to be typeable
+while standing in someone's hallway, not adjusted for where the repo happens to
+sit.
 
 `.env` holds `OPENAI_API_KEY` for the damage-classification layer only, and is
 gitignored, see `.env.example`. No geometry path reads it.

@@ -59,6 +59,30 @@ run videoB_myroom  "myroom/my room video/IMG_8486.MOV"  --truth-height $TRUTH_H 
 run videoB_friend1 "myroom/friend 1 room vid/IMG_8566.MOV"
 
 echo "################ Fallback path, mesh export ################"
-run meshtest "$S/8_29_2026 - My room 2.zip"
+# This has to run on a real mesh or it proves nothing. Earlier versions pointed
+# the mesh row at the same zip, which simply ran Tier C again and labelled it a
+# fallback. So a point cloud is exported first, and the fallback then reads it
+# with no poses, no depth and no confidence, exactly as it would if the operator
+# had missed Developer Mode.
+MESH="$OUT/myroom2_export.ply"
+mkdir -p "$OUT"
+$PY - "$S/8_29_2026 - My room 2.zip" "$MESH" <<'PY'
+import sys
+sys.path.insert(0, "src")
+import numpy as np
+from cozmo.ingest import lidar
+cap = lidar.load(sys.argv[1], max_frames=160)
+pts = np.vstack([lidar.to_world_points(f) for f in cap.frames])
+rng = np.random.default_rng(0)
+if len(pts) > 600_000:
+    pts = pts[rng.choice(len(pts), 600_000, replace=False)]
+with open(sys.argv[2], "wb") as fh:
+    fh.write(b"ply\nformat binary_little_endian 1.0\n")
+    fh.write(f"element vertex {len(pts)}\n".encode())
+    fh.write(b"property float x\nproperty float y\nproperty float z\nend_header\n")
+    fh.write(pts.astype("<f4").tobytes())
+print(f"  exported {len(pts):,} vertices to {sys.argv[2]}")
+PY
+run meshtest "$MESH" --truth-height $TRUTH_H --truth-walls $TRUTH_W
 
 echo "done. JSON and SVG in $OUT/"

@@ -16,7 +16,7 @@ omitted; a matrix that hides them is worth less than one that does not.
 | 1.2 | Name the off-the-shelf tool | [docs/capture-protocol.md](capture-protocol.md) §0, §3 to 5 | Polycam (Tier C), native iOS Camera (Tiers A/B) | **done** |
 | 1.3 | One-page protocol a non-engineer follows | [docs/capture-protocol.md](capture-protocol.md) | prints to one A4 page | **done** |
 | 1.4 | What to install / how to walk / how long / what to avoid / how to hand files over | §0, §1, §3 to 7 | numbered steps, all distances and durations stated | **done** |
-| 1.5 | File contract verified, not asserted | [docs/capture-bakeoff.md](capture-bakeoff.md) | real export opened; published format wrong in 5 places | **done** |
+| 1.5 | File contract verified, not asserted | [docs/benchmark-report.md](benchmark-report.md) appendix | real export opened; published format wrong in 5 places | **done** |
 | 1.6 | Device matrix | [docs/capture-protocol.md](capture-protocol.md) | tier → hardware → tool → data → scale | **done** |
 
 ## Part 1, Three input tiers
@@ -41,7 +41,7 @@ omitted; a matrix that hides them is worth less than one that does not.
 | 2.8 | Concealed-damage flags with the rule that fired | [src/cozmo/geometry/concealed.py](../src/cozmo/geometry/concealed.py) | 4 named rules over sensor confidence and range; `concealed_conditions[]` in every JSON. My room fires `low_confidence_surface` on 19% of scanned surface | **done** |
 | 2.9 | Scope line items keyed to surfaces | [src/cozmo/contract/scope.py](../src/cozmo/contract/scope.py) | floor covering, ceiling paint, wall paint net of openings, skirting; each inherits the interval of the dimension it came from | **done** |
 | 2.10 | Confidence interval on every measurement | [src/cozmo/types.py](../src/cozmo/types.py) | every `Measurement` carries `lo`/`hi` + provenance | **done** |
-| 2.11 | One command per capture | [src/cozmo/\_\_main\_\_.py](../src/cozmo/__main__.py) | `python -m cozmo run <capture>` | **done** |
+| 2.11 | One command per capture | [src/cozmo/\_\_main\_\_.py](../src/cozmo/__main__.py) | `cozmo run <capture>` | **done** |
 | 2.12 | JSON to a published schema | [src/cozmo/contract/schema.py](../src/cozmo/contract/schema.py) | `cozmo-plan/0.2` | **done** |
 | 2.13 | Rendered plan | [src/cozmo/contract/render.py](../src/cozmo/contract/render.py) | `out/*.svg`, dimensions annotated with intervals | **done** |
 
@@ -70,8 +70,8 @@ omitted; a matrix that hides them is worth less than one that does not.
 
 | # | Requirement | File | Artifact | Status |
 |---|---|---|---|---|
-| 3.1 | Our LiDAR output vs one consumer app on 2 rooms | [docs/head-to-head.md](head-to-head.md) | Polycam Floorplan (RoomPlan) v6.0.21; **beat 4 of 4 dimensions** | **partial** 1 room, brief asks 2 |
-| 3.2 | Name the app and version | [docs/head-to-head.md](head-to-head.md) | Polycam Floorplan mode (RoomPlan), **v6.0.21** | **done** |
+| 3.1 | Our LiDAR output vs one consumer app on 2 rooms | [docs/benchmark-report.md](benchmark-report.md) | Polycam Floorplan (RoomPlan) v6.0.21; **beat 4 of 4 dimensions** | **partial** 1 room, brief asks 2 |
+| 3.2 | Name the app and version | [docs/benchmark-report.md](benchmark-report.md) | Polycam Floorplan mode (RoomPlan), **v6.0.21** | **done** |
 
 ## Part 4, Fix loop
 
@@ -88,19 +88,28 @@ omitted; a matrix that hides them is worth less than one that does not.
 |---|---|---|---|
 | 5.1 | Commit as you work | `git log` | **done** incremental across the build |
 
-## Deliverables
+## Deliverables, as the brief numbers them
 
 | # | Deliverable | Where | Status |
 |---|---|---|---|
-| D1 | Compliance matrix | this file | **done** |
-| D2 | Capture route + device matrix | [docs/capture-protocol.md](capture-protocol.md) | **done** |
-| D3 | Repo + README, fresh capture in <15 min, one command | [README.md](../README.md) | **done** |
-| D4 | Reproduction bundle | README quick start; stdlib inspector, `requirements.txt` | **partial** |
-| D5 | Benchmark report | [docs/benchmark-report.md](benchmark-report.md) | **partial** Tier C only |
-| D6 | Fix loop bundle | [docs/fix-loop.md](fix-loop.md) | **done** |
-| D7 | Technical report, max 6 pages | [docs/technical-report.md](technical-report.md) | **done** |
-| D9 | Head-to-head | [docs/head-to-head.md](head-to-head.md) | **done** (1 room) |
-| D8 | Raw benchmark data | `myroom/` (gitignored, delivered separately) | **done** |
+| 1 | Compliance matrix | this file | **done** |
+| 2 | Capture route (one-page protocol) + device matrix | [docs/capture-protocol.md](capture-protocol.md) | **done**, one page |
+| 3 | Repo, README to a fresh capture in under 15 min, one command | [README.md](../README.md) | **done**, `pip install -e .` then `cozmo run` |
+| 4 | Reproduction bundle: regenerate every reported number from raw inputs | [scripts/benchmark.sh](../scripts/benchmark.sh) | **done**. Model outputs cached and the cache replays deterministically; the live path also runs |
+| 5 | Benchmark report: gates at all three tiers, repeatability, head-to-head, timing | [docs/benchmark-report.md](benchmark-report.md) | **done**, all three tiers scored |
+| 6 | Fix loop bundle | [docs/fix-loop.md](fix-loop.md) | **done**, before and after both regenerable |
+| 7 | Technical report, **max 6 pages** | [docs/technical-report.md](technical-report.md) | **done**, within the cap |
+| 8 | Raw benchmark data: sensor logs, ground truth, app exports | `myroom/` (1.3 GB, gitignored, delivered separately) | **done** |
+
+## Constraints
+
+| Constraint | How it is met | Status |
+|---|---|---|
+| Handheld consumer capture only | iPhone 17 Pro, Polycam and the native Camera. No tripod, no rig | **done** |
+| Any pretrained model with disclosure | MASt3R (tiers A/B) and Depth Anything V2 (fallback) named in the report and in the provenance of every figure they touch | **done** |
+| Runs without calling our infrastructure | Tier C and the whole test suite are offline. Tiers A and B run the model locally. The only network call is an optional last-resort estimator, off the geometry path | **done** |
+| Weights and large binaries fetched by script | [scripts/setup_learned.sh](../scripts/setup_learned.sh) fetches the 2.7 GB checkpoint and the vendored model code; nothing large is committed | **done** |
+| Mirrors, glass, wet-look surfaces, low light | Reported rather than guessed: `concealed_conditions[]` raises sustained low-confidence regions with the rule that fired and the area. My room flags 19% of scanned surface, about 10.6 m². Two benchmark rooms captured at ISO 3200 | **done** |
 
 ---
 

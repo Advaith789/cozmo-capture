@@ -32,3 +32,8 @@ captures/
 .DS_Store
 .cache/
 vendor/
+
+# packaging build output
+*.egg-info/
+build/
+dist/

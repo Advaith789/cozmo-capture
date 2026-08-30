@@ -1,0 +1,43 @@
+# Packaging exists for one reason: the walk-in test.
+#
+# The runbook says `python -m cozmo check <capture>` and someone standing in a
+# customer's hallway has to be able to type exactly that. Without this file the
+# package sits under src/ and is not importable, so the documented command fails
+# with "No module named cozmo" unless PYTHONPATH is set by hand. That is a poor
+# thing to discover on the day.
+#
+#   pip install -e .          the pipeline, Tier C, numpy only
+#   pip install -e '.[learned]'   adds Tiers A and B (2.7 GB of model, see
+#                                 scripts/setup_learned.sh)
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cozmo-capture"
+version = "0.2.0"
+description = "Room measurement from phone captures, with an interval on every number"
+requires-python = ">=3.10"
+dependencies = ["numpy>=2.0"]
+
+[project.optional-dependencies]
+# Tiers A and B. The model weights are not pip installable; see
+# scripts/setup_learned.sh, which fetches them and the vendored model code.
+learned = [
+    "torch>=2.2",
+    "torchvision",
+    "roma",
+    "einops",
+    "opencv-python-headless",
+    "scipy",
+    "tqdm",
+    "safetensors",
+    "huggingface_hub",
+]
+
+[project.scripts]
+cozmo = "cozmo.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

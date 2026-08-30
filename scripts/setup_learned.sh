@@ -52,4 +52,4 @@ PY
 
 echo
 echo "done. Tiers A and B now reconstruct:"
-echo "    python -m cozmo run '<photo folder>' --name roomA"
+echo "    cozmo run '<photo folder>' --name roomA"

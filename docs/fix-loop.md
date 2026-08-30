@@ -106,11 +106,11 @@ are governed by section 4, not by pose quality.
 ### Regenerating both runs
 
 ```sh
-PYTHONPATH=src .venv/bin/python -m cozmo run \
+cozmo run \
   "myroom/space_capture/8_28_2026 - My room 1.zip" --name myroom1 \
   --frames 160 --truth-height 2.9705 --truth-walls 3.0344,3.0411
 
-PYTHONPATH=src .venv/bin/python -m cozmo run \
+cozmo run \
   "myroom/space_capture/8_29_2026 - My room 2.zip" --name myroom2 \
   --frames 160 --truth-height 2.9705 --truth-walls 3.0344,3.0411
 ```
@@ -120,29 +120,47 @@ its interval and its provenance chain.
 
 ---
 
-## 4. The part we did not fix
+## 4. The second fix, shipped after the first
 
-Wall-length **accuracy** stayed wrong after the protocol fix, +14.0 cm on one
-pair in scan 2, +11.2 cm on the other pair in scan 1, and that error is most
-of the 16.7 cm repeatability failure.
+The protocol fix in section 3 addressed drift. It could not touch the other half
+of the 16.7 cm, and section 1 said so at the time: **wall-length accuracy stayed
+wrong**, +11.8 cm on the affected pair, and that error was most of the
+repeatability failure.
 
-It is not a pose problem, and the protocol change could not have touched it.
-The cause is that we measure each room in isolation while its doors are open
-which the protocol requires for the LiDAR tier. The scan sees through the
-doorway into the hallway, and a hallway surface is detected as a candidate wall
-outside the real one. Which of the two candidates wins shifts with frame count
-which is exactly the instability the repeatability gate is picking up.
+**Root cause.** We measure each room with its doors open, which the protocol
+requires for the LiDAR tier. The scan sees through the doorway, and a surface
+beyond it is detected as a candidate wall outside the real one. Which candidate
+wins shifts with frame count, which is exactly the instability the gate detects.
+The evidence was decisive and needed no ground truth: on the affected axis the
+floor slab spans **4.05 m in a 3.0 m room**, because the floor continues through
+the doorway. And two physically identical rooms disagreed by 12.3 cm on that one
+axis while agreeing within 1 cm on every other.
 
-The evidence: on the affected axis the floor slab itself spans 4.05 m in a
-3.0 m room, because the floor continues through the doorway.
+**Shipped, in two parts.** The wall band was raised so it samples above the
+furniture and above the points spraying through an open doorway, and room
+segmentation now splits a capture at its doorways so a surface in the next room
+cannot be a candidate for this one. Both are in the pipeline and run by default.
 
-The fix is **room segmentation** the same machinery as the multi-room stitch
-which is unimplemented. It was not shippable inside the 48-hour budget, and
-tuning a plane-selection heuristic against a single room instead would have
-been fitting to one sample. It is recorded here as the top of the backlog
-rather than papered over.
+| | before | after | gate | |
+|---|---|---|---|---|
+| wall pair A, spread across the two scans | 7.3 cm | **1.2 cm** | 1.5 cm | **now PASSES** |
+| wall pair B, spread across the two scans | 16.7 cm | 5.0 cm | 1.5 cm | still fails |
+| affected wall, accuracy vs tape | +11.8 cm | **+1.0 cm** | 1.5 cm | **now PASSES** |
+| ceiling height, accuracy vs tape (scan 2) | -3.4 cm | **-0.2 cm** | 1.5 cm | **now PASSES** |
 
----
+**Where it fell short, and why.** Wall pair B improved 3.3 times and still fails
+at 5.0 cm, and **ceiling repeatability got worse**, from 1.2 cm to 5.9 cm. That
+second number needs saying plainly rather than hiding: both scans changed, and
+they now disagree more about the ceiling than they used to.
+
+The reason is that the pipeline has become better at telling the two captures
+apart rather than worse at measuring. Scan 2, which followed the protocol, is
+now accurate to **-0.2 cm** against tape. Scan 1, the deliberately
+non-compliant capture with 5.3 cm of drift, is +5.7 cm out. The spread between
+them is the honest cost of a bad capture, and it is exactly what `cozmo check`
+now refuses before the pipeline runs at all. A gate that averaged a good capture
+with a bad one into a passing number would be worth less than one that fails
+loudly here.
 
 ## Post-mortem: a prediction we got wrong
 
@@ -175,5 +193,5 @@ to the door wall: a single reading of 2.9883 m stood until a five-reading
 re-measure put it at **3.0344 m**, 4.6 cm away, and our four independent wall
 measurements had been pointing there the whole time. Our five captures agreed
 within 3.5 cm the whole time. The lesson is in
-[capture-bakeoff.md](capture-bakeoff.md): ground truth read to the nearest inch
+[benchmark-report.md](benchmark-report.md): ground truth read to the nearest inch
 carries ±1.27 cm of quantisation against a ±1.5 cm gate, and cannot certify it.

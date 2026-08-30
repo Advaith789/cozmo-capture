@@ -11,7 +11,7 @@ bash scripts/benchmark.sh
 or any single row with:
 
 ```sh
-PYTHONPATH=src .venv/bin/python -m cozmo run "<capture>.zip" --name <name> \
+cozmo run "<capture>.zip" --name <name> \
   --frames 160 --bootstrap 40 --wall-draws 50 \
   [--truth-height <m> --truth-walls <m>,<m>]
 ```
@@ -314,17 +314,22 @@ Ground truth is tape on my room and the Tier C measurement elsewhere, which is
 itself good to about 1 cm on the room where we hold a tape. Rows scored against
 Tier C say so.
 
-| capture | tier | ceiling | reference | error | gate |
-|---|---|---|---|---|---|
-| my room | A, photos | 2.828 m | 2.9705 m tape | **-4.8%** | **PASS** |
-| friend 1 room | A, photos | 2.771 m | 2.9873 m Tier C | **-7.2%** | **PASS** |
-| my room, re-shot | A, photos | 2.682 m | 2.9705 m tape | -9.7% | fail |
-| friend 2 room | A, photos | 2.309 m | 2.9631 m Tier C | -22.1% | fail |
-| friend 1 room | B, video | 3.858 m | 2.9873 m Tier C | +29.1% | fail |
-| my room | B, video | 1.999 m | 2.9705 m tape | -32.7% | fail |
+The brief sets the two tiers different gates: photo wall lengths within **±8%**,
+video within **±3%**. Video is the tighter one, because a clip carries far more
+frames of a room than eight stills ever can.
 
-**Two of six clear the ±8% gate; the median absolute error is 15.9%.** Photos
-beat video on every comparison we can make. Nothing here is claimed.
+| capture | tier | ceiling | reference | error | its gate | |
+|---|---|---|---|---|---|---|
+| my room | A, photos | 2.828 m | 2.9705 m tape | **-4.8%** | ±8% | **PASS** |
+| friend 1 room | A, photos | 2.771 m | 2.9873 m Tier C | **-7.2%** | ±8% | **PASS** |
+| my room, re-shot | A, photos | 2.682 m | 2.9705 m tape | -9.7% | ±8% | fail |
+| friend 2 room | A, photos | 2.309 m | 2.9631 m Tier C | -22.1% | ±8% | fail |
+| friend 1 room | B, video | 3.858 m | 2.9873 m Tier C | +29.1% | ±3% | fail |
+| my room | B, video | 1.999 m | 2.9705 m tape | -32.7% | ±3% | fail |
+
+**Two of six clear their tier's gate**, both at the photo tier; the median
+absolute error is 15.9%. Video clears neither, and against a ±3% bar it is not
+close. Photos beat video on every comparison available. Nothing here is claimed.
 
 One capture of the six recovered two opposing wall pairs and closed a room
 polygon. Its walls are the best result the camera tiers produce:
@@ -420,12 +425,74 @@ points, which is where a phone is held. And the top 1% of the reconstructed
 points span **4.6 cm**, which is a flat ceiling plane rather than ragged wall
 tops, so the ceiling is being seen and not inferred.
 
+## Head to head against the incumbent
+
+**Incumbent:** Polycam, Floorplan mode (Apple RoomPlan underneath), free tier,
+**version 6.0.21**. Export submitted as
+`myroom/floorplan/8_29_2026 - Floorplan - My room.zip`; the comparison is drawn
+from its `optimized_roomplan.json`. Ours is `out/myroom2.json`.
+
+| dimension | tape | **ours** | error | Polycam | error | result |
+|---|---|---|---|---|---|---|
+| ceiling height | 2.9705 m | **2.9680 m** | **-0.2 cm** | 2.9382 m | -3.2 cm | **win** |
+| door wall | 3.0344 m | **3.0372 m** | **+0.3 cm** | 3.1185 m | +8.4 cm | **win** |
+| other wall | 3.0411 m | **3.0524 m** | **+1.1 cm** | 3.1393 m | +9.8 cm | **win** |
+| floor area | 9.2279 m² | **9.271 m²** | **+0.5%** | 9.790 m² | +6.1% | **win** |
+
+**Four of four shared dimensions, against a bar of 70%.** Our largest error is
+1.1 cm; Polycam's smallest is 3.2 cm.
+
+Accuracy is not the whole comparison:
+
+| capability | ours | Polycam |
+|---|---|---|
+| room segmentation | yes, with doorway widths | yes |
+| door and window detection | yes, ray traced, not claimed | 2 doors, 1 window, dimensioned |
+| wall thickness | no | yes |
+| multi-room stitch | yes, from one capture | yes |
+| an interval on every number | **yes** | no |
+
+Polycam is better at knowing what it is looking at. We are more accurate on the
+dimensions we both produce, and we are the only one of the two that says how
+uncertain each number is.
+
+**Caveats, stated rather than buried.** This covers **one room; the brief asks
+for two**, and that row is short: we now hold tape for a second room but have no
+Polycam export of it. The two captures are different sessions minutes apart, not
+shared frames. Wall pairing is by best correspondence since neither output
+labels its walls; the alternative pairing gives Polycam +12.1 and +11.9 cm and
+does not change the outcome.
+
+## Appendix: the export format, verified rather than assumed
+
+The published format notes for a Polycam raw export are **wrong in five
+places**. Everything the ingest does is derived from a real export.
+
+| documented | actual |
+|---|---|
+| everything nested in one capture folder | **no wrapper**: `keyframes/` sits at the archive root |
+| `raw.glb` | absent |
+| `corrected_images/` | absent |
+| confidence levels `0 / 127 / 255` | **`0 / 54 / 255`** |
+| frames named sequentially | named by microsecond timestamp |
+
+`cameras/*.json` also carries undocumented fields that turned out to matter more
+than the documented ones: `tracking_segment` increments when tracking is lost
+and re-initialised, which is the single most important flag for drift;
+`blur_score` ranged 5 to 325 in one scan; `angular_velocity` (median 0.46, max
+2.51 rad/s) lets the protocol be **audited from the capture** rather than
+trusted; `iso` and `exposure_time` detect the low-light case the brief asks us
+to cover. `corrected_cameras/` drops all of them, so ingest joins the two
+directories by filename stem: corrected poses, raw metadata.
+
 ## What this benchmark does not cover
 
-- **Tiers A and B run but are not reliable.** Scored above, error from 0.1% to
-  59%, and we cannot tell in advance which we will get. This remains the
-  largest gap in the submission, and it is now a measured gap rather than an
-  empty one.
+- **Tiers A and B run but are not reliable.** Scored above: ceiling error from
+  4.8% to 32.7%, two of six inside their tier's gate, and we cannot tell in
+  advance which we will get. **The photo-tier whole-property stitch does not
+  exist**, because only one photo capture recovers two opposing wall pairs, so
+  that row of the brief is a fail. This remains the largest gap in the
+  submission, and it is now a measured gap rather than an empty one.
 - **The opening-width gate is not claimed.** Detection works and is scored on
   synthetic truth at 0.8 cm mean error against the 2 cm gate. On a real capture
   it finds the doorway but measures the clear opening, 0.587 m, against a
@@ -444,11 +511,12 @@ tops, so the ceiling is being seen and not inferred.
   capture of my room have no tape, so their accuracy is unscored and only their
   precision is reported.
 - **Ground truth precision is the binding limit on every accuracy figure here.**
-  Four successive tape readings of one ceiling gave 3.0226, 2.9972, 2.9241 and
-  2.9705 m, a 9.8 cm spread against a 1.5 cm gate, and the ceiling gate passes
-  or fails depending on which is used. Measuring a 3 m ceiling overhead with a
-  handheld tape is a ±5 cm operation; our five captures span 5.9 cm and two
-  captures of identical rooms agree to 0.4 cm. **The pipeline is more repeatable
-  than the instrument measuring it.** A laser reading to millimetres is required
-  before any accuracy claim at this gate is defensible. This is stated as a
-  limitation of the benchmark, not of the pipeline.
+  Ten tape readings of the friend 1 ceiling, across two sessions, span 6.9 cm
+  against a 1.5 cm gate, and the two session means differ by 2.0 cm, so the
+  gate passes or fails depending on which is used. Measuring a 3 m ceiling
+  overhead with a handheld tape is a ±5 cm operation. The four compliant
+  captures span 3.4 cm and two captures of identically built rooms agree to
+  0.5 cm. **The pipeline is more repeatable than the instrument measuring it.**
+  A laser reading to millimetres is required before any ceiling accuracy claim
+  at this gate is defensible. This is a limitation of the benchmark, not of the
+  pipeline.

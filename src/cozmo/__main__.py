@@ -1,6 +1,6 @@
 """One command per capture.
 
-    python -m cozmo measure myroom/8_28_2026.zip
+    cozmo measure myroom/8_28_2026.zip
 
 Tier is detected from the input rather than passed in, so the same command
 serves all three.
@@ -239,9 +239,14 @@ def _height_only(cap, height, args, tier: str, path: Path, t0: float) -> int:
     if args.truth_height:
         err = (height.value - args.truth_height) * 100
         rel = height.value / args.truth_height - 1
+        # The brief sets the tiers apart: photos within 8%, video within 3%.
+        # Video is the tighter gate because a clip carries far more frames of
+        # the same room than eight stills ever can.
+        limit = 0.03 if tier == "B" else 0.08
         print(f"accuracy         {err:+.1f} cm vs tape ({rel:+.1%})   "
-              f"{'PASS' if abs(rel) <= 0.08 else 'fail'} against the photo "
-              f"tier's ±8% gate")
+              f"{'PASS' if abs(rel) <= limit else 'fail'} against the "
+              f"{'video' if tier == 'B' else 'photo'} tier's "
+              f"±{limit * 100:.0f}% gate")
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -743,7 +748,7 @@ def cmd_check(args: argparse.Namespace) -> int:
     if problems:
         print("\nNO GO     re-capture before running the pipeline.")
         return 3
-    print(f"\nGO        run:  python -m cozmo run \"{path}\" --name <room>")
+    print(f"\nGO        run:  cozmo run \"{path}\" --name <room>")
     return 0
 
 
