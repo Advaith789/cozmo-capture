@@ -7,9 +7,11 @@
 #
 #   bash scripts/benchmark.sh [outdir]
 #
-# Ground truth is my room only: ceiling 2.9705 m, walls 3.0344 and 3.0411 m,
-# measured five times with a tape. The other rooms are scored for precision
-# but have no accuracy column, which the table says rather than hides.
+# Ground truth is tape, on two rooms, five readings per dimension:
+#   my room   ceiling 2.9705 m, walls 3.0344 and 3.0411 m
+#   friend 1  ceiling 3.0120 m, walls 3.7636 and 3.3620 m
+# The remaining rooms are scored for precision but have no accuracy column,
+# which the table says rather than hides.
 
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -21,6 +23,9 @@ PY=".venv/bin/python"
 S="myroom/space_capture"
 TRUTH_H=2.9705
 TRUTH_W=3.0344,3.0411
+# Friend 1 room, five tape readings per dimension, means below.
+F1_H=3.0120
+F1_W=3.7636,3.3620
 
 run() {  # name  capture  [truth args...]
   local name="$1"; shift
@@ -36,7 +41,7 @@ run() {  # name  capture  [truth args...]
 echo "################ Tier C, LiDAR ################"
 run myroom2 "$S/8_29_2026 - My room 2.zip"        --truth-height $TRUTH_H --truth-walls $TRUTH_W
 run myroom1 "$S/8_28_2026 - My room 1.zip"        --truth-height $TRUTH_H --truth-walls $TRUTH_W
-run friend1 "$S/8_29_2026 - Friend - 1 Room.zip"
+run friend1 "$S/8_29_2026 - Friend - 1 Room.zip"  --truth-height $F1_H --truth-walls $F1_W
 run friend2 "$S/8_29_2026 - Friend 2 Room.zip"
 run hallway "$S/8_29_2026 - Connecter Hallway.zip"
 

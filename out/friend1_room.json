@@ -1,6 +1,6 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-30T03:30:04+00:00",
+  "generated": "2026-08-30T04:08:05+00:00",
   "capture": {
     "source": "8_29_2026 - Friend - 1 Room.zip",
     "tier": "C",
@@ -32,8 +32,8 @@
       ],
       "floor_area": {
         "value": 12.6531,
-        "ci_low": 12.7468,
-        "ci_high": 12.8082,
+        "ci_low": 12.6195,
+        "ci_high": 12.681,
         "ci_half_width": 0.0307,
         "unit": "m2",
         "provenance": [
@@ -48,8 +48,8 @@
       },
       "perimeter": {
         "value": 14.2515,
-        "ci_low": 14.3027,
-        "ci_high": 14.3371,
+        "ci_low": 14.2332,
+        "ci_high": 14.2676,
         "ci_half_width": 0.0172,
         "unit": "m",
         "provenance": [
@@ -80,8 +80,8 @@
       "wall_lengths": [
         {
           "value": 3.7654,
-          "ci_low": 3.7673,
-          "ci_high": 3.7808,
+          "ci_low": 3.7575,
+          "ci_high": 3.7711,
           "ci_half_width": 0.0068,
           "unit": "m",
           "provenance": [
@@ -96,8 +96,8 @@
         },
         {
           "value": 3.3603,
-          "ci_low": 3.3775,
-          "ci_high": 3.3929,
+          "ci_low": 3.3519,
+          "ci_high": 3.3673,
           "ci_half_width": 0.0077,
           "unit": "m",
           "provenance": [
@@ -112,8 +112,8 @@
         },
         {
           "value": 3.7654,
-          "ci_low": 3.7673,
-          "ci_high": 3.7808,
+          "ci_low": 3.7575,
+          "ci_high": 3.7711,
           "ci_half_width": 0.0068,
           "unit": "m",
           "provenance": [
@@ -128,8 +128,8 @@
         },
         {
           "value": 3.3603,
-          "ci_low": 3.3775,
-          "ci_high": 3.3929,
+          "ci_low": 3.3519,
+          "ci_high": 3.3673,
           "ci_half_width": 0.0077,
           "unit": "m",
           "provenance": [
@@ -247,7 +247,8 @@
     }
   ],
   "stitched_plan": {
-    "rooms": 1,
+    "spaces_found": 1,
+    "rooms_measured": 1,
     "adjacency": [],
     "status": "single-room capture; nothing to stitch"
   },
@@ -278,8 +279,8 @@
       "surface": "floor",
       "item": "floor covering",
       "quantity": 12.653,
-      "ci_low": 12.747,
-      "ci_high": 12.808,
+      "ci_low": 12.62,
+      "ci_high": 12.681,
       "unit": "m2",
       "basis": "floor area from the wall polygon"
     },
@@ -287,8 +288,8 @@
       "surface": "ceiling",
       "item": "ceiling paint",
       "quantity": 12.653,
-      "ci_low": 12.747,
-      "ci_high": 12.808,
+      "ci_low": 12.62,
+      "ci_high": 12.681,
       "unit": "m2",
       "basis": "same footprint as the floor",
       "note": "assumes a flat ceiling at one level"
@@ -307,8 +308,8 @@
       "surface": "perimeter",
       "item": "skirting board",
       "quantity": 14.252,
-      "ci_low": 14.303,
-      "ci_high": 14.337,
+      "ci_low": 14.233,
+      "ci_high": 14.268,
       "unit": "m",
       "basis": "room perimeter",
       "note": "full perimeter; door openings not deducted"
@@ -319,31 +320,46 @@
       "gate": "ceiling_height",
       "limit_m": 0.015,
       "interval_half_width_m": 0.0109,
-      "precision_pass": true
+      "precision_pass": true,
+      "ground_truth_m": 3.012,
+      "error_m": -0.0247,
+      "accuracy_pass": false
     },
     {
       "gate": "wall_length_0",
       "limit_m": 0.015,
       "interval_half_width_m": 0.0068,
-      "precision_pass": true
+      "precision_pass": true,
+      "ground_truth_m": 3.7636,
+      "error_m": 0.0018,
+      "accuracy_pass": true
     },
     {
       "gate": "wall_length_1",
       "limit_m": 0.015,
       "interval_half_width_m": 0.0077,
-      "precision_pass": true
+      "precision_pass": true,
+      "ground_truth_m": 3.362,
+      "error_m": -0.0017,
+      "accuracy_pass": true
     },
     {
       "gate": "wall_length_2",
       "limit_m": 0.015,
       "interval_half_width_m": 0.0068,
-      "precision_pass": true
+      "precision_pass": true,
+      "ground_truth_m": 3.7636,
+      "error_m": 0.0018,
+      "accuracy_pass": true
     },
     {
       "gate": "wall_length_3",
       "limit_m": 0.015,
       "interval_half_width_m": 0.0077,
-      "precision_pass": true
+      "precision_pass": true,
+      "ground_truth_m": 3.362,
+      "error_m": -0.0017,
+      "accuracy_pass": true
     }
   ],
   "known_limitations": [

@@ -1,6 +1,6 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-30T03:32:12+00:00",
+  "generated": "2026-08-30T04:10:16+00:00",
   "capture": {
     "source": "friend 2 room pics",
     "tier": "A",
@@ -32,8 +32,8 @@
       ],
       "floor_area": {
         "value": 8.649,
-        "ci_low": 5.9445,
-        "ci_high": 11.8604,
+        "ci_low": 5.9439,
+        "ci_high": 11.8598,
         "ci_half_width": 2.958,
         "unit": "m2",
         "provenance": [
@@ -195,7 +195,8 @@
     }
   ],
   "stitched_plan": {
-    "rooms": 1,
+    "spaces_found": 1,
+    "rooms_measured": 1,
     "adjacency": [],
     "status": "single-room capture; nothing to stitch"
   },

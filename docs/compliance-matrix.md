@@ -51,9 +51,9 @@ omitted; a matrix that hides them is worth less than one that does not.
 |---|---|---|---|---|
 | 2.14 | Multi-room capture, 3+ rooms plus a connector | `myroom/space_capture/` | 4 rooms + hallway, Tier C | **done** |
 | 2.15 | One furnished room with damage in 2 classes | `myroom/error photos/` | hallway 2×3 in ellipse; friend-2 room 3×3 in square | **partial** staged and measured, not detected |
-| 2.16 | Same rooms at all three tiers | `myroom/` | Tier C ×5, photos ×3 rooms, video ×3 rooms | **partial** captured, only Tier C processed |
+| 2.16 | Same rooms at all three tiers | `myroom/` | Tier C x5, photos x3 rooms, video x2, all processed and scored | **done** processed; Tier A/B accuracy is poor and reported as such |
 | 2.17 | One room captured twice at the same tier | `8_28 My room 1` + `8_29 My room 2` | repeatability table in benchmark report | **done** |
-| 2.18 | Tape or laser ground truth, measurements submitted | [docs/capture-bakeoff.md](capture-bakeoff.md) | door wall 3.0344 m (5 readings), other wall 3.0411 m, ceiling 2.9705 m, door slab 0.8382 m, frame 0.9576 m | **partial** my room only |
+| 2.18 | Tape or laser ground truth, measurements submitted | [docs/benchmark-report.md](benchmark-report.md) | **two rooms**, five readings each. My room: walls 3.0344 / 3.0411 m, ceiling 2.9705 m, door slab 0.8382 m, frame 0.9576 m. Friend 1: walls 3.7636 / 3.3620 m, ceiling 3.0120 m, measured after the pipeline was frozen | **done** |
 
 ## Part 2, Gates
 

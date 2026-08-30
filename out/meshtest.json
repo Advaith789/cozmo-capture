@@ -1,6 +1,6 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-30T03:33:41+00:00",
+  "generated": "2026-08-30T04:11:46+00:00",
   "capture": {
     "source": "8_29_2026 - My room 2.zip",
     "tier": "C",
@@ -32,8 +32,8 @@
       ],
       "floor_area": {
         "value": 9.2709,
-        "ci_low": 9.2094,
-        "ci_high": 9.3009,
+        "ci_low": 9.2196,
+        "ci_high": 9.3111,
         "ci_half_width": 0.0458,
         "unit": "m2",
         "provenance": [
@@ -48,8 +48,8 @@
       },
       "perimeter": {
         "value": 12.1793,
-        "ci_low": 12.1389,
-        "ci_high": 12.1991,
+        "ci_low": 12.1455,
+        "ci_high": 12.2057,
         "ci_half_width": 0.0301,
         "unit": "m",
         "provenance": [
@@ -80,8 +80,8 @@
       "wall_lengths": [
         {
           "value": 3.0372,
-          "ci_low": 3.0238,
-          "ci_high": 3.0402,
+          "ci_low": 3.0282,
+          "ci_high": 3.0446,
           "ci_half_width": 0.0082,
           "unit": "m",
           "provenance": [
@@ -96,8 +96,8 @@
         },
         {
           "value": 3.0524,
-          "ci_low": 3.0408,
-          "ci_high": 3.0652,
+          "ci_low": 3.0393,
+          "ci_high": 3.0636,
           "ci_half_width": 0.0122,
           "unit": "m",
           "provenance": [
@@ -112,8 +112,8 @@
         },
         {
           "value": 3.0372,
-          "ci_low": 3.0238,
-          "ci_high": 3.0402,
+          "ci_low": 3.0282,
+          "ci_high": 3.0446,
           "ci_half_width": 0.0082,
           "unit": "m",
           "provenance": [
@@ -128,8 +128,8 @@
         },
         {
           "value": 3.0524,
-          "ci_low": 3.0408,
-          "ci_high": 3.0652,
+          "ci_low": 3.0393,
+          "ci_high": 3.0636,
           "ci_half_width": 0.0122,
           "unit": "m",
           "provenance": [
@@ -204,7 +204,8 @@
     }
   ],
   "stitched_plan": {
-    "rooms": 1,
+    "spaces_found": 1,
+    "rooms_measured": 1,
     "adjacency": [],
     "status": "single-room capture; nothing to stitch"
   },
@@ -227,8 +228,8 @@
       "surface": "floor",
       "item": "floor covering",
       "quantity": 9.271,
-      "ci_low": 9.209,
-      "ci_high": 9.301,
+      "ci_low": 9.22,
+      "ci_high": 9.311,
       "unit": "m2",
       "basis": "floor area from the wall polygon"
     },
@@ -236,8 +237,8 @@
       "surface": "ceiling",
       "item": "ceiling paint",
       "quantity": 9.271,
-      "ci_low": 9.209,
-      "ci_high": 9.301,
+      "ci_low": 9.22,
+      "ci_high": 9.311,
       "unit": "m2",
       "basis": "same footprint as the floor",
       "note": "assumes a flat ceiling at one level"
@@ -256,8 +257,8 @@
       "surface": "perimeter",
       "item": "skirting board",
       "quantity": 12.179,
-      "ci_low": 12.139,
-      "ci_high": 12.199,
+      "ci_low": 12.146,
+      "ci_high": 12.206,
       "unit": "m",
       "basis": "room perimeter",
       "note": "full perimeter; door openings not deducted"

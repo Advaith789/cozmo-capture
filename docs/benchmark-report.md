@@ -31,14 +31,53 @@ appears twice at the same tier for the repeatability gate. Tiers A and B are
 processed too, by a learned multi-view model, and reported in their own section
 below; they are much weaker than Tier C and the numbers say so.
 
-Ground truth is tape, metric, on my room only, final values, with the wall
-carrying the door labelled so the pairing is not inferred:
+Ground truth is tape, metric, on **two rooms**, five readings per dimension,
+with the wall carrying the door labelled so the pairing is not inferred.
+
+**My room:**
 
 | | value |
 |---|---|
 | door wall | **3.0344 m**, mean of five readings: 303.8, 304.2, 300.1, 306.7, 302.4 cm |
 | other wall | 3.0411 m |
 | ceiling | 2.9705 m (9' 8.95") |
+
+**Friend 1 room**, measured after the pipeline was frozen, so nothing here was
+tuned against it:
+
+| | mean | five readings, cm | spread | sd of the mean |
+|---|---|---|---|---|
+| long wall | **3.7636 m** | 375.98, 376.52, 374.89, 377.90, 376.50 | 3.0 cm | 0.49 cm |
+| short wall | **3.3620 m** | 336.00, 337.00, 336.50, 335.50, 336.00 | 1.5 cm | 0.25 cm |
+| ceiling | **3.0120 m** | 301.00, 303.00, 302.50, 300.40, 299.10 | 3.9 cm | 0.71 cm |
+
+This is the strongest accuracy evidence in the submission, because it is the
+one room measured against a tape that had never seen our output:
+
+| friend 1 room | ours | tape | error | in sd of the mean |
+|---|---|---|---|---|
+| long wall | 3.7654 m | 3.7636 m | **+0.18 cm** | 0.4 |
+| short wall | 3.3603 m | 3.3620 m | **-0.17 cm** | 0.7 |
+| ceiling | 2.9873 m | 3.0120 m | **-2.47 cm** | 3.5 |
+
+Both walls land inside 2 mm, well inside the 1.5 cm gate and well inside the
+tape's own scatter. The ceiling misses by 2.5 cm and fails, and that is worth
+being precise about rather than explaining away.
+
+It is not a choice of estimator: all four ceiling methods read this room between
+2.889 and 2.987 m, so every one of them sits below every one of the five tape
+readings. Something systematic separates the two instruments, and the asymmetry
+is on the tape's side. A floor to ceiling measurement with an unsupported tape
+at 3 m can only err long: tilt adds length, bow adds length, and neither can
+make the reading short. A wall measurement has no such asymmetry because the
+tape is held taut between two surfaces, which is consistent with the walls
+agreeing to 2 mm and the ceiling not.
+
+Against the mean of the five readings we are 2.47 cm low and the gate fails.
+Against the lowest of them, 299.10 cm, which is the reading least affected by a
+one-sided error, we are 0.37 cm low and it passes. **The failing figure is the
+one reported**, because choosing the reading that suits us is exactly the move
+this report exists to avoid. Settling it needs a laser, not an argument.
 
 The door wall figure replaces an earlier single reading of 2.9883 m, which was
 4.6 cm out. **The pipeline found that error before the tape did:** four
@@ -70,68 +109,67 @@ a tape whose four readings of one ceiling spanned 9.8 cm.
 
 ## Gates, accuracy, scored where ground truth exists
 
-Only my room carries tape measurements.
+Three rooms carry tape. Every row below is scored against a tape applied to
+that same room.
 
 | capture | gate | precision | | accuracy | |
 |---|---|---|---|---|---|
 | my room 2 | ceiling height | ±0.76 cm | **PASS** | **-0.2 cm** | **PASS** |
 | my room 2 | door wall | ±0.82 cm | **PASS** | **+0.3 cm** | **PASS** |
 | my room 2 | other wall | ±1.22 cm | **PASS** | **+1.1 cm** | **PASS** |
-| friend 2 | ceiling height | ±0.50 cm | **PASS** | **-0.7 cm** | **PASS** |
-| friend 2 | door wall | ±0.77 cm | **PASS** | **+0.9 cm** | **PASS** |
-| friend 2 | other wall | ±3.11 cm | fail | **-0.7 cm** | **PASS** |
+| friend 1 | ceiling height | ±1.09 cm | **PASS** | -2.5 cm | fail |
+| friend 1 | long wall | ±0.68 cm | **PASS** | **+0.2 cm** | **PASS** |
+| friend 1 | short wall | ±0.77 cm | **PASS** | **-0.2 cm** | **PASS** |
 | my room 1 | ceiling height | ±0.70 cm | **PASS** | +5.7 cm | fail |
 | my room 1 | door wall | ±1.76 cm | fail | **-0.9 cm** | **PASS** |
 | my room 1 | other wall | ±1.66 cm | fail | -3.8 cm | fail |
 
-**Accuracy passes 7 of 9, precision 6 of 9.** My room 2, the capture that
-followed the protocol, passes every gate on both axes. Every remaining failure
-belongs to scan 1, the deliberately non-compliant capture, except one precision
-miss on friend 2.
+**Precision passes 7 of 9, accuracy 6 of 9.** My room 2, the capture that
+followed the protocol, passes every gate on both axes. Friend 1 passes both
+walls to within 2 mm and misses only on the ceiling. Every remaining failure
+belongs to my room 1, the deliberately non-compliant capture.
 
-Applying the same tape to friend 2's room, which is the same unit type and the
-same floorplan, gives a materially better picture on walls:
-
-| room | door wall | other wall | ceiling |
-|---|---|---|---|
-| my room 2 | +0.3 cm | +1.1 cm | -0.2 cm |
-| friend 2 | +0.9 cm | -0.7 cm | -0.7 cm |
-
-Both rooms now sit inside the gate on every measurement, and the two identical
-rooms agree with each other to within 1.2 cm.
+An earlier version of this table scored friend 2 against **my room's** tape, on
+the grounds that they are the same unit type with the same floorplan. That was
+an assumption standing in for a measurement, and it flattered us: it produced
+three extra passing rows from a tape that had never touched that room. It is
+gone, replaced by friend 1 measured against its own tape, which is a weaker
+looking table and a stronger claim. Friend 2 now appears only in the
+consistency section below, where an untaped room belongs.
 
 ## Cross-room consistency, a check that needs no ground truth
 
 My room and friend 2's room are the same unit type with the same floorplan.
 Identical rooms must produce identical numbers; where they do not, something
-specific is wrong. This validates the pipeline without a tape at all.
+specific is wrong. This validates the pipeline without a tape at all, and it is
+where friend 2 belongs now that it is no longer being scored against someone
+else's tape.
 
 | | my room 2 | friend 2 | difference |
 |---|---|---|---|
-| ceiling | 2.9364 | 2.9322 | **0.4 cm** |
-| wall X | 3.0359 | 3.0458 | **1.0 cm** |
-| wall Y | 3.1600 | 3.0374 | **12.3 cm** |
+| ceiling | 2.9680 m | 2.9631 m | **0.5 cm** |
+| wall X | 3.0372 m | 3.0607 m | **2.4 cm** |
+| wall Y | 3.0524 m | 3.0228 m | **3.0 cm** |
+| floor area | 9.2709 m2 | 9.2519 m2 | **0.02 m2** |
 
-Two independent captures in two different rooms agree on ceiling height to
-**four millimetres** tighter than any two of the four tape readings agree with
-each other.
+Two independent captures of two different rooms with the same floorplan agree on
+ceiling height to **five millimetres**, which is tighter than any two of the four
+tape readings of a single ceiling agree with each other, and on floor area to
+two hundredths of a square metre.
 
-The internal squareness check is sharper still. Both rooms are near-square in
-reality:
+**This check is what found the largest defect in the pipeline.** An earlier
+version measured wall Y as 3.1600 m in my room against 3.0374 m in friend 2, a
+12.3 cm disagreement between rooms that are physically identical, and reported
+my room as 12.4 cm out of square where friend 2 was 0.8 cm. The same floorplan
+cannot be both. That isolated the fault to one axis, the one carrying the open
+doorway, and to one mechanism: the wall band was sampling low enough to pick up
+furniture and the points spraying through the doorway. Raising the band fixed
+it, and the two rooms now agree on every dimension to within 3 cm. The write-up
+is in [fix-loop.md](fix-loop.md).
 
-| | measured out-of-square |
-|---|---|
-| friend 2 | **0.8 cm** |
-| my room | **12.4 cm** |
-
-The same floorplan cannot be 12 cm out of square in one capture and 0.8 cm in
-another. **Three of four wall measurements across the two rooms agree within
-1 cm; exactly one is corrupted** and that one is my room's wall Y, the axis
-carrying the open doorway.
-
-This isolates the defect precisely. It is not a general accuracy problem in wall
-detection; it is one identified mechanism affecting one axis, reproduced and
-bounded.
+That is the argument for this check. It needs no ground truth, it costs nothing,
+and it found something a tape never would have: with a single room there is
+nothing to disagree with.
 
 ## Repeatability gate
 
@@ -319,8 +357,9 @@ tops, so the ceiling is being seen and not inferred.
   tape-measured (hallway 2x3 in ellipse, friend-2 room 3x3 in square). The
   detector runs behind `--damage` and reported 79 regions on a clean control
   room, so it is off by default and claimed against nothing.
-- **Ground truth on one room only.** The other four have no tape measurements
-  so their accuracy is unscored and only their precision is reported.
+- **Ground truth on two rooms of five.** Friend 2, the hallway and the repeat
+  capture of my room have no tape, so their accuracy is unscored and only their
+  precision is reported.
 - **Ground truth precision is the binding limit on every accuracy figure here.**
   Four successive tape readings of one ceiling gave 3.0226, 2.9972, 2.9241 and
   2.9705 m, a 9.8 cm spread against a 1.5 cm gate, and the ceiling gate passes

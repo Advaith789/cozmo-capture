@@ -159,9 +159,31 @@ def build(axes: RoomAxes, height: Measurement, name: str = "room",
         areas = np.array([x[2] for x in sampled])
         pers = np.array([x[3] for x in sampled])
         edge_draws = np.array([x[1] for x in sampled])
-        area_lo, area_hi = np.percentile(areas, [2.5, 97.5])
-        per_lo, per_hi = np.percentile(pers, [2.5, 97.5])
-        edge_ci = [np.percentile(edge_draws[:, i], [2.5, 97.5])
+        # Recentre the bootstrap on the number actually reported.
+        #
+        # The value comes from the wall detection; the draws come from refits
+        # of that detection on resampled frames, and those are two different
+        # estimators of the same wall. They differ by a few millimetres, and on
+        # the friend 1 capture by 2.5 cm, which was enough to publish an
+        # interval that did not contain its own point estimate, or the tape.
+        # An interval that excludes the number it belongs to is not a weaker
+        # claim than one that includes it, it is an incoherent one.
+        #
+        # Resampling the detection instead would fix the centring and break
+        # something worse: a draw that mistakes a wardrobe for a wall does not
+        # tell us how precisely a wall is located, and letting detection vary
+        # gave intervals of about a metre. So detection stays fixed, the
+        # bootstrap keeps its job of measuring dispersion, and its percentiles
+        # are shifted onto the estimate. Width is unchanged; only the centre
+        # moves, which is the standard recentred percentile interval.
+        def recentre(draw_vals: np.ndarray, value: float):
+            lo, hi = np.percentile(draw_vals, [2.5, 97.5])
+            shift = value - float(np.median(draw_vals))
+            return lo + shift, hi + shift
+
+        area_lo, area_hi = recentre(areas, area)
+        per_lo, per_hi = recentre(pers, per)
+        edge_ci = [recentre(edge_draws[:, i], edges[i])
                    for i in range(len(edges))]
     else:
         prov.append(f"interval:ASSUMED_plane_sigma_{fallback_sigma_cm}cm")

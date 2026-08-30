@@ -1,6 +1,6 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-30T03:37:03+00:00",
+  "generated": "2026-08-30T04:08:56+00:00",
   "capture": {
     "source": "8_29_2026 - Connecter Hallway.zip",
     "tier": "C",
@@ -32,8 +32,8 @@
       ],
       "floor_area": {
         "value": 4.6529,
-        "ci_low": 4.6452,
-        "ci_high": 4.7512,
+        "ci_low": 4.6106,
+        "ci_high": 4.7166,
         "ci_half_width": 0.053,
         "unit": "m2",
         "provenance": [
@@ -48,8 +48,8 @@
       },
       "perimeter": {
         "value": 10.0052,
-        "ci_low": 9.9867,
-        "ci_high": 10.078,
+        "ci_low": 9.9653,
+        "ci_high": 10.0566,
         "ci_half_width": 0.0456,
         "unit": "m",
         "provenance": [
@@ -80,8 +80,8 @@
       "wall_lengths": [
         {
           "value": 3.7677,
-          "ci_low": 3.7539,
-          "ci_high": 3.7887,
+          "ci_low": 3.7498,
+          "ci_high": 3.7846,
           "ci_half_width": 0.0174,
           "unit": "m",
           "provenance": [
@@ -96,8 +96,8 @@
         },
         {
           "value": 1.235,
-          "ci_low": 1.2334,
-          "ci_high": 1.2558,
+          "ci_low": 1.2254,
+          "ci_high": 1.2479,
           "ci_half_width": 0.0112,
           "unit": "m",
           "provenance": [
@@ -112,8 +112,8 @@
         },
         {
           "value": 3.7677,
-          "ci_low": 3.7539,
-          "ci_high": 3.7887,
+          "ci_low": 3.7498,
+          "ci_high": 3.7846,
           "ci_half_width": 0.0174,
           "unit": "m",
           "provenance": [
@@ -128,8 +128,8 @@
         },
         {
           "value": 1.235,
-          "ci_low": 1.2334,
-          "ci_high": 1.2558,
+          "ci_low": 1.2254,
+          "ci_high": 1.2479,
           "ci_half_width": 0.0112,
           "unit": "m",
           "provenance": [
@@ -283,8 +283,8 @@
       "surface": "hallway-room1:floor",
       "item": "floor covering",
       "quantity": 4.653,
-      "ci_low": 4.645,
-      "ci_high": 4.751,
+      "ci_low": 4.611,
+      "ci_high": 4.717,
       "unit": "m2",
       "basis": "floor area from the wall polygon"
     },
@@ -292,8 +292,8 @@
       "surface": "hallway-room1:ceiling",
       "item": "ceiling paint",
       "quantity": 4.653,
-      "ci_low": 4.645,
-      "ci_high": 4.751,
+      "ci_low": 4.611,
+      "ci_high": 4.717,
       "unit": "m2",
       "basis": "same footprint as the floor",
       "note": "assumes a flat ceiling at one level"
@@ -312,8 +312,8 @@
       "surface": "hallway-room1:perimeter",
       "item": "skirting board",
       "quantity": 10.005,
-      "ci_low": 9.987,
-      "ci_high": 10.078,
+      "ci_low": 9.965,
+      "ci_high": 10.057,
       "unit": "m",
       "basis": "room perimeter",
       "note": "full perimeter; door openings not deducted"

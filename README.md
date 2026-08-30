@@ -39,10 +39,12 @@ other wall       3.0524 m   precision ±1.22 cm PASS   accuracy +1.1 cm PASS
 ```
 
 The capture that followed the protocol passes every gate on both axes. Across
-all scored gates, accuracy passes 7 of 9 and precision 6 of 9. The benchmark's ground truth turned out to be
-less precise than the gate it was meant to certify, which is written up as a
-result rather than buried: see [technical-report.md](docs/technical-report.md)
-section 3.
+nine gates scored against tape in three rooms, **precision passes 7 and accuracy
+6**. A second room was tape-measured after the pipeline was frozen, and both its
+walls came in inside 2 mm: **+0.2 cm and -0.2 cm** against a 1.5 cm gate. The
+benchmark's ground truth turned out to be less precise than the gate it was
+meant to certify, which is written up as a result rather than buried: see
+[technical-report.md](docs/technical-report.md) section 3.
 
 **Tiers A and B** reconstruct with a learned multi-view model (MASt3R), run
 locally and disclosed. Classical matching could not do it: COLMAP registered 4
