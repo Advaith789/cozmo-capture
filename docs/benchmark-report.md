@@ -26,6 +26,21 @@ PYTHONPATH=src .venv/bin/python -m cozmo run "<capture>.zip" --name <name> \
 | Friend 2 room | 1 | C | 307 | 1.5 min | 0.5 cm | 160 |
 | Connector hallway | 1 | C | 280 | 1.7 min | 0.7 cm | 400 |
 
+The camera tiers, over the same rooms:
+
+| capture | tier | photos or frames | burst used | views reconstructed |
+|---|---|---|---|---|
+| My room, photos | A | 69 | 48 | 12 |
+| My room, **re-shot to the protocol** | A | 22 | 22 | 11 |
+| Friend 1 room, photos | A | 29 | 29 | 12 |
+| Friend 2 room, photos | A | 67 | 67 | 12 |
+| My room, video | B | 60 sampled | 60 | 12 |
+| Friend 1 room, video | B | 60 sampled | 60 | 12 |
+
+Views are capped at twelve by 8 GB of unified memory, not by choice. A burst is
+one unbroken run of photographs: the first folder held two sessions an hour
+apart, and pairing across them was worth catching.
+
 Three rooms plus a connector, which is the composition the brief asks for. My room
 appears twice at the same tier for the repeatability gate. Tiers A and B are
 processed too, by a learned multi-view model, and reported in their own section
@@ -299,15 +314,19 @@ Ground truth is tape on my room and the Tier C measurement elsewhere, which is
 itself good to about 1 cm on the room where we hold a tape. Rows scored against
 Tier C say so.
 
-| capture | tier | ceiling | reference | error |
-|---|---|---|---|---|
-| my room | A, photos | 2.591 m | 2.9705 m tape | **-12.8%** |
-| friend 1 room | A, photos | 2.751 m | 2.9873 m Tier C | **-7.9%** |
-| friend 2 room | A, photos | 2.261 m | 2.9631 m Tier C | **-23.7%** |
-| my room | B, video | 1.218 m | 2.9705 m tape | **-59.0%** |
-| friend 1 room | B, video | 3.176 m | 2.9873 m Tier C | **+6.3%** |
+| capture | tier | ceiling | reference | error | gate |
+|---|---|---|---|---|---|
+| my room | A, photos | 2.828 m | 2.9705 m tape | **-4.8%** | **PASS** |
+| friend 1 room | A, photos | 2.771 m | 2.9873 m Tier C | **-7.2%** | **PASS** |
+| my room, re-shot | A, photos | 2.682 m | 2.9705 m tape | -9.7% | fail |
+| friend 2 room | A, photos | 2.309 m | 2.9631 m Tier C | -22.1% | fail |
+| friend 1 room | B, video | 3.858 m | 2.9873 m Tier C | +29.1% | fail |
+| my room | B, video | 1.999 m | 2.9705 m tape | -32.7% | fail |
 
-One capture of the five recovered two opposing wall pairs and so closed a room
+**Two of six clear the ±8% gate; the median absolute error is 15.9%.** Photos
+beat video on every comparison we can make. Nothing here is claimed.
+
+One capture of the six recovered two opposing wall pairs and closed a room
 polygon. Its walls are the best result the camera tiers produce:
 
 | friend 2 room, Tier A | photos | Tier C | error |
@@ -315,10 +334,43 @@ polygon. Its walls are the best result the camera tiers produce:
 | wall 0 | 2.863 m | 3.061 m | -6.5% |
 | wall 1 | 3.021 m | 3.023 m | **-0.1%** |
 
-So the honest summary is that the camera tiers are **not reliable**, that their
-error ranges from 0.1% to 59%, and that we cannot tell in advance which we will
-get. The gate is ±8% and two of seven scored figures clear it. Nothing here is
-claimed.
+### The re-shoot, which did not do what we expected
+
+One room was re-shot specifically to the protocol above: 22 photographs in a
+single unbroken burst, one small step between frames, both junction lines in
+shot. It is the only capture we hold that follows the rules the protocol sets.
+
+**It came out worse than the capture it was meant to improve on:** -35.5%
+against the original's -12.8%. Chasing that down found two real defects, and
+neither was in the photography.
+
+**The frame selector was covering half the room.** Frames are sampled from one
+burst with the stride capped so neighbouring views overlap. On a 48 photo burst
+that is right. On 22 photographs taken one step apart it produced twelve
+consecutive frames spanning half the circle the operator had actually walked, so
+two of the four walls were never seen. The rule now spans the whole sweep first
+and thins it second, which lifted coverage from 55% to 95% of the burst and left
+the longer captures untouched.
+
+**The ceiling estimator was measuring the bed.** This was most of it. The
+estimator locates floor and ceiling as the two densest horizontal bands, which
+is correct for a LiDAR sweep because the operator is told to look up. A person
+taking photographs at chest height barely captures a ceiling at all: in this
+cloud the ceiling is **2.7% of the points**, and the two densest bands are the
+floor and the bed. It measured the bed and reported 1.79 m for a 2.97 m room.
+Switching to the extremes of the cloud, with a tail smaller than the share of
+points on the least sampled surface, took the same capture to -9.7%.
+
+Both fixes helped every camera capture, not just this one. My room went from
+-12.8% to **-4.8%**, friend 1 from -7.9% to **-7.2%**, and the worst case, a
+video, from -59.0% to -32.7%.
+
+**The re-shoot still did not beat the original**, which is worth saying plainly
+after asking for it: 22 photographs in a tight circle carry less angular
+diversity than 48 taken over a longer session, and the original remains our best
+photo capture at -4.8%. What the re-shoot bought was not a better number, it was
+two defects that a compliant capture exposed and a non-compliant one had been
+hiding.
 
 ### What we learned making them work at all
 

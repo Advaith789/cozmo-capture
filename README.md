@@ -51,10 +51,10 @@ locally and disclosed. Classical matching could not do it: COLMAP registered 4
 photographs of 29, because a bedroom wall is large, flat, blank and dimly lit
 and there is nothing to match. The learned model does reconstruct, and camera
 height falls out at 1.54 m, which is where a phone is held. Ceiling height
-still reads 8 to 15% low and no photo capture recovers two opposing wall pairs,
-so no room polygon closes and the ±8% gate is missed. Both tiers report the
-ceiling height with an interval that covers their measured error, and say what
-they could not produce. Install with `bash scripts/setup_learned.sh`; nothing
+clears the ±8% gate on two of six captures, with a median absolute error of
+15.9%, and only one capture recovers two opposing wall pairs and closes a room
+polygon. Both tiers report the ceiling height with an interval that covers their
+measured error, and say what they could not produce. Install with `bash scripts/setup_learned.sh`; nothing
 else in the pipeline needs it.
 
 **Built since:** multi-room stitching (a capture spanning two rooms is now

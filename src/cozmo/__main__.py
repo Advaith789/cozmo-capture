@@ -347,8 +347,12 @@ def cmd_run(args: argparse.Namespace) -> int:
         # estimator to find. Measured on my room: sparse read 17.7% low
         # because a tail quantile cuts the ceiling off when a tenth of the
         # points are up there; envelope read 9.6% low on the same cloud.
-        dense = tier in ("C", "M") or cap.meta.get("model")
-        method = args.height_method if dense else "sparse"
+        if tier in ("C", "M"):
+            method = args.height_method
+        elif cap.meta.get("model"):
+            method = "learned"      # a photo reconstruction, see _learned_separation
+        else:
+            method = "sparse"
         height = ceiling_height(cap, method=method,
                                 bootstrap=args.bootstrap,
                                 sigma_step=args.sigma_step)

@@ -1,17 +1,17 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-30T16:01:35+00:00",
+  "generated": "2026-08-30T16:02:01+00:00",
   "capture": {
-    "source": "my room pics",
+    "source": "last_test_my_room",
     "tier": "A",
-    "frames_used": 12,
-    "frames_total": 113
+    "frames_used": 11,
+    "frames_total": 22
   },
   "rooms": [],
   "partial": {
-    "ceiling_height_m": 2.8283,
-    "ci_low": 2.3192,
-    "ci_high": 3.3374,
+    "ceiling_height_m": 2.6821,
+    "ci_low": 2.1993,
+    "ci_high": 3.1648,
     "provenance": [
       "depth:inferred",
       "pose:sfm",

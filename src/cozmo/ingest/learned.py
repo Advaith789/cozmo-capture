@@ -164,7 +164,14 @@ def reconstruct(photos: list[Path], n_views: int = N_VIEWS,
     # reconstruction came out 17% short with three walls. Capping the stride
     # keeps neighbouring views genuinely overlapping, at the cost of covering
     # only part of a very long burst, which is the right trade.
-    stride = max(1, min(MAX_STRIDE, len(burst) // max(n_views, 1)))
+    # Cover the whole sweep, then thin it. Getting this backwards cost a
+    # capture: with 22 photos taken one step apart the stride came out at 1,
+    # so twelve consecutive frames spanned only half the circle the operator
+    # actually walked, and the room reconstructed 36% short. Overlap matters,
+    # but not at the price of never seeing two of the four walls. So the
+    # stride is whatever it takes to span the burst, capped so neighbouring
+    # views still share most of a scene.
+    stride = max(1, min(MAX_STRIDE, -(-len(burst) // max(n_views, 1))))
     span = min(len(burst), n_views * stride)
     start = (len(burst) - span) // 2                    # centre of the sweep
     sel = burst[start:start + span:stride][:n_views]

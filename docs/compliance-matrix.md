@@ -23,8 +23,8 @@ omitted; a matrix that hides them is worth less than one that does not.
 
 | # | Requirement | File | Artifact | Status |
 |---|---|---|---|---|
-| 1.7 | Tier A, photos | [src/cozmo/ingest/learned.py](../src/cozmo/ingest/learned.py) | MASt3R metric multi-view reconstruction, run locally and disclosed. Ceiling height measured; no closed polygon on our captures | **partial** runs end to end, misses the ±8% gate |
-| 1.8 | Tier B, handheld video | [src/cozmo/ingest/learned.py](../src/cozmo/ingest/learned.py) | frames sampled across the clip for baseline, then the same reconstruction as Tier A | **partial** runs end to end, misses the ±8% gate |
+| 1.7 | Tier A, photos | [src/cozmo/ingest/learned.py](../src/cozmo/ingest/learned.py) | MASt3R metric multi-view reconstruction, run locally and disclosed. Ceiling height measured; no closed polygon on our captures | **partial** runs end to end; clears the ±8% gate on two of six captures |
+| 1.8 | Tier B, handheld video | [src/cozmo/ingest/learned.py](../src/cozmo/ingest/learned.py) | frames sampled across the clip for baseline, then the same reconstruction as Tier A | **partial** runs end to end; clears the ±8% gate on two of six captures |
 | 1.9 | Tier C, depth, poses, intrinsics | [src/cozmo/ingest/lidar.py](../src/cozmo/ingest/lidar.py) | 5 captures ingested end to end | **done** |
 
 ## Part 2, Output contract
@@ -112,8 +112,8 @@ command, validated against tape in two rooms and run on five LiDAR captures
 plus photo and video captures at tiers A and B.
 
 **Tiers A and B run and are scored, and they are not reliable.** Error ranges
-from 0.1% to 59% and cannot be predicted in advance, so the walk-in test is
-still best served at the LiDAR tier. This remains the single largest gap, but it
+from 4.8% to 32.7% on ceiling height, clearing the ±8% gate on two of six
+captures, so the walk-in test is still best served at the LiDAR tier. This remains the single largest gap, but it
 is now a measured one rather than an empty one.
 
 **Openings, stitching and damage detection all exist.** Openings are ray traced

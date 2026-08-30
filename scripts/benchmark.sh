@@ -48,6 +48,9 @@ run hallway "$S/8_29_2026 - Connecter Hallway.zip"
 
 echo "################ Tier A, photographs ################"
 run photoA_myroom  "myroom/my room pics"      --truth-height $TRUTH_H --truth-walls $TRUTH_W
+# Re-shot to the protocol: one continuous burst, one step between frames, both
+# junction lines in shot. This is the only photo capture that follows it.
+run photoA_reshoot "myroom/last_test_my_room"  --truth-height $TRUTH_H --truth-walls $TRUTH_W
 run photoA_friend1 "myroom/friend 1 room pics"
 run photoA_friend2 "myroom/friend 2 room pics"
 

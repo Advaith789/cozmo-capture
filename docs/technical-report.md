@@ -46,7 +46,7 @@ not yet produce usable measurements.
 |---|---|
 | **LiDAR capture** | Polycam raw export with developer mode on: images, depth, confidence, intrinsics and two sets of poses. |
 | **photos or video** | The camera-only tiers, shot on the native Camera app because Polycam exports nothing usable without LiDAR. |
-| **ingest.learned** | Reconstructs tiers A and B with MASt3R, a learned multi-view model run locally. Feature matching could not: a bedroom wall is flat, blank and dim, and COLMAP registered 4 photographs of 29. Amber because it reconstructs but reads 8 to 24% low. |
+| **ingest.learned** | Reconstructs tiers A and B with MASt3R, a learned multi-view model run locally. Feature matching could not: a bedroom wall is flat, blank and dim, and COLMAP registered 4 photographs of 29. Amber because it reconstructs but clears the ±8% gate on only two of six captures. |
 | **PosedFrame** | The one representation all three tiers converge on, so the geometry below is written once instead of three times. |
 | **floor and ceiling** | Locates both surfaces at a tail quantile rather than the densest band, because clutter sits on floors and fittings hang below ceilings. Drift is solved against these planes and the correction sweeps to zero for the ablation. |
 | **spaces** | Splits a capture covering more than one room, by eroding the floor until doorways sever and flooding the room cores back out. A split survives only where a wall stands between the two halves. Doorway width falls out of the same distance transform. |
@@ -349,10 +349,11 @@ the problem:
   cut the ceiling off: 17.7% low against 9.6% for the dense estimator on the
   same cloud.
 
-What that buys is honest but weak. Ceiling height lands between 8% and 24% low
-across three rooms, one capture of five recovers two opposing wall pairs and
-closes a polygon with a wall at -0.1% against the LiDAR tier, and video is much
-worse than photographs. The gate is ±8%; two of seven scored figures clear it.
+What that buys is honest but weak. Ceiling height errors run from -4.8% to
+-32.7% across six captures, one of them recovers two opposing wall pairs and
+closes a polygon with a wall at -0.1% against the LiDAR tier, and video is
+worse than photographs on every comparison available. The gate is ±8%; **two of
+six clear it and the median absolute error is 15.9%.**
 **Nothing here is claimed.** Two sanity checks do pass independently: camera
 height comes out at 1.54 m, where a phone is held, and the top 1% of points span
 4.6 cm, which is a ceiling plane rather than noise.

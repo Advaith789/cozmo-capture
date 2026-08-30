@@ -1,6 +1,6 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-30T06:07:05+00:00",
+  "generated": "2026-08-30T16:03:22+00:00",
   "capture": {
     "source": "IMG_8486.MOV",
     "tier": "B",
@@ -9,14 +9,14 @@
   },
   "rooms": [],
   "partial": {
-    "ceiling_height_m": 1.2176,
-    "ci_low": 0.9984,
-    "ci_high": 1.4368,
+    "ceiling_height_m": 1.9985,
+    "ci_low": 1.6388,
+    "ci_high": 2.3582,
     "provenance": [
       "depth:inferred",
       "pose:sfm",
       "scale:mast3r_metric_head",
-      "method:envelope",
+      "method:learned",
       "interval:scale_prior_\u00b118pct"
     ]
   },

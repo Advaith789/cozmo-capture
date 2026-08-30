@@ -172,6 +172,40 @@ MIN_DRAWS = 20
 FALLBACK_HALF_WIDTH = 0.05
 
 
+LEARNED_TAU = 0.005    # see _learned_separation for where this number comes from
+
+
+def _learned_separation(clouds: list[np.ndarray]) -> float | None:
+    """Floor to ceiling on a learned reconstruction from photographs.
+
+    Neither of the other two estimators works here, and the reason is the same
+    for both: **people do not photograph ceilings.**
+
+    A LiDAR sweep is told to look up, so the ceiling arrives as a dense band and
+    a mode finder locates it. A set of stills taken at chest height barely
+    contains one. On our densest photo capture the ceiling is 2.7% of the
+    points, and the two densest horizontal bands in the cloud are the floor and
+    the bed; the mode based estimator duly measured the height of the bed and
+    reported 1.79 m for a 2.97 m room.
+
+    That also fixes the tail fraction. `_sparse_separation` trims 5% off each
+    end, which is sound for a feature cloud and here throws the entire ceiling
+    away before it is measured. **The trim has to be smaller than the share of
+    points on the least sampled surface**, so 0.5% rather than 5%. On the same
+    cloud that is 2.70 m against 2.39 m, and the room is 2.97 m.
+
+    0.5% is derived rather than tuned: it has to sit below the 2.7% of points
+    that the least sampled surface holds. A sweep over the six camera captures
+    we hold a reference for confirms it, at 0.5, 1 and 2 percent, and the
+    derived value wins on both the number inside the gate and the median error.
+    Six samples is a weak confirmation and is quoted as one.
+
+    The remaining error is scale, not estimation, and it is not fixed here:
+    even at the best tail the median camera tier error is 16%.
+    """
+    return _sparse_separation(clouds, tau=LEARNED_TAU)
+
+
 def _sparse_separation(clouds: list[np.ndarray], tau: float = ENVELOPE_TAU
                        ) -> float | None:
     """Floor to ceiling on a reconstruction with no dense surface bands.
@@ -233,7 +267,9 @@ def ceiling_height(capture: Capture, method: str = "envelope",
     if not clouds:
         raise ValueError("not enough frames with usable depth")
 
-    if method == "sparse":
+    if method == "learned":
+        estimate = _learned_separation
+    elif method == "sparse":
         estimate = _sparse_separation
     elif method == "envelope":
         estimate = _envelope_separation
