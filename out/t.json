@@ -1,11 +1,11 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-29T22:18:07+00:00",
+  "generated": "2026-08-29T23:46:02+00:00",
   "capture": {
-    "source": "8_29_2026 - My room 2.zip",
+    "source": "8_29_2026 - Friend - 1 Room.zip",
     "tier": "C",
-    "frames_used": 100,
-    "frames_total": 335,
+    "frames_used": 120,
+    "frames_total": 241,
     "loop_closed": true,
     "tracking_segments": 1
   },
@@ -14,56 +14,58 @@
       "name": "t",
       "footprint": [
         [
-          -0.2355,
-          -3.3894
+          2.0787,
+          -3.7018
         ],
         [
-          2.0228,
-          -1.356
+          2.7655,
+          0.0035
         ],
         [
-          -0.0206,
-          0.9135
+          -0.5363,
+          0.6154
         ],
         [
-          -2.279,
-          -1.1199
+          -1.223,
+          -3.0899
         ]
       ],
       "floor_area": {
-        "value": 9.2805,
-        "ci_low": 9.109,
-        "ci_high": 9.4537,
-        "ci_half_width": 0.1723,
+        "value": 12.6543,
+        "ci_low": 12.4545,
+        "ci_high": 12.8557,
+        "ci_half_width": 0.2006,
         "unit": "m2",
         "provenance": [
           "depth:measured",
           "pose:device_optimised",
           "scale:sensor",
           "method:wall_plane_intersection",
+          "prior:rectangular_room(0.6deg_skew)",
           "interval:ASSUMED_plane_sigma_2.0cm"
         ],
         "samples": 0
       },
       "perimeter": {
-        "value": 12.1856,
-        "ci_low": 12.0725,
-        "ci_high": 12.2988,
-        "ci_half_width": 0.1131,
+        "value": 14.2528,
+        "ci_low": 14.1399,
+        "ci_high": 14.3658,
+        "ci_half_width": 0.1129,
         "unit": "m",
         "provenance": [
           "depth:measured",
           "pose:device_optimised",
           "scale:sensor",
           "method:wall_plane_intersection",
+          "prior:rectangular_room(0.6deg_skew)",
           "interval:ASSUMED_plane_sigma_2.0cm"
         ],
         "samples": 0
       },
       "ceiling_height": {
-        "value": 2.9736,
-        "ci_low": 2.9236,
-        "ci_high": 3.0236,
+        "value": 2.9874,
+        "ci_low": 2.9374,
+        "ci_high": 3.0374,
         "ci_half_width": 0.05,
         "unit": "m",
         "provenance": [
@@ -71,15 +73,15 @@
           "pose:device_optimised",
           "scale:sensor",
           "method:envelope",
-          "interval:ASSUMED_\u00b15cm_only_5_draws"
+          "interval:ASSUMED_\u00b15cm_only_8_draws"
         ],
-        "samples": 100
+        "samples": 120
       },
       "wall_lengths": [
         {
-          "value": 3.0389,
-          "ci_low": 3.0189,
-          "ci_high": 3.0589,
+          "value": 3.7684,
+          "ci_low": 3.7484,
+          "ci_high": 3.7884,
           "ci_half_width": 0.02,
           "unit": "m",
           "provenance": [
@@ -87,14 +89,15 @@
             "pose:device_optimised",
             "scale:sensor",
             "method:wall_plane_intersection",
+            "prior:rectangular_room(0.6deg_skew)",
             "interval:ASSUMED_plane_sigma_2.0cm"
           ],
           "samples": 0
         },
         {
-          "value": 3.0539,
-          "ci_low": 3.0339,
-          "ci_high": 3.0739,
+          "value": 3.358,
+          "ci_low": 3.338,
+          "ci_high": 3.378,
           "ci_half_width": 0.02,
           "unit": "m",
           "provenance": [
@@ -102,14 +105,15 @@
             "pose:device_optimised",
             "scale:sensor",
             "method:wall_plane_intersection",
+            "prior:rectangular_room(0.6deg_skew)",
             "interval:ASSUMED_plane_sigma_2.0cm"
           ],
           "samples": 0
         },
         {
-          "value": 3.0389,
-          "ci_low": 3.0189,
-          "ci_high": 3.0589,
+          "value": 3.7684,
+          "ci_low": 3.7484,
+          "ci_high": 3.7884,
           "ci_half_width": 0.02,
           "unit": "m",
           "provenance": [
@@ -117,14 +121,15 @@
             "pose:device_optimised",
             "scale:sensor",
             "method:wall_plane_intersection",
+            "prior:rectangular_room(0.6deg_skew)",
             "interval:ASSUMED_plane_sigma_2.0cm"
           ],
           "samples": 0
         },
         {
-          "value": 3.0539,
-          "ci_low": 3.0339,
-          "ci_high": 3.0739,
+          "value": 3.358,
+          "ci_low": 3.338,
+          "ci_high": 3.378,
           "ci_half_width": 0.02,
           "unit": "m",
           "provenance": [
@@ -132,6 +137,7 @@
             "pose:device_optimised",
             "scale:sensor",
             "method:wall_plane_intersection",
+            "prior:rectangular_room(0.6deg_skew)",
             "interval:ASSUMED_plane_sigma_2.0cm"
           ],
           "samples": 0
@@ -140,43 +146,104 @@
       "walls": [
         {
           "normal": [
-            0.73632,
-            0.67664
+            0.17796,
+            0.98404
           ],
-          "offset_m": -2.443,
-          "points": 31277,
-          "planarity_cm": 2.51
+          "offset_m": -3.261,
+          "points": 232315,
+          "planarity_cm": 2.43
         },
         {
           "normal": [
-            0.74284,
-            0.66947
+            0.18906,
+            0.98197
           ],
-          "offset_m": 0.5959,
-          "points": 37451,
-          "planarity_cm": 2.53
+          "offset_m": 0.5074,
+          "points": 212597,
+          "planarity_cm": 2.62
         },
         {
           "normal": [
-            -0.66948,
-            0.74283
+            -0.98133,
+            0.19231
           ],
-          "offset_m": -2.3612,
-          "points": 44286,
-          "planarity_cm": 3.08
+          "offset_m": -2.7185,
+          "points": 315685,
+          "planarity_cm": 3.22
         },
         {
           "normal": [
-            -0.67263,
-            0.73998
+            -0.98186,
+            0.18961
           ],
-          "offset_m": 0.6927,
-          "points": 55737,
-          "planarity_cm": 0.96
+          "offset_m": -0.4596,
+          "points": 283281,
+          "planarity_cm": 1.86
+        },
+        {
+          "normal": [
+            -0.98259,
+            0.1858
+          ],
+          "offset_m": 0.6395,
+          "points": 483920,
+          "planarity_cm": 2.76
         }
       ],
       "openings_status": "experimental, not claimed against the opening gate: widths vary by a factor of two across frame counts",
-      "openings": []
+      "openings": [
+        {
+          "wall_index": 0,
+          "kind": "window",
+          "width_m": 1.6,
+          "height_m": 1.36,
+          "sill_m": 0.96,
+          "width_ci": [
+            1.57,
+            1.6
+          ],
+          "border_confidence": 1.0,
+          "provenance": [
+            "depth:measured",
+            "method:wall_plane_hole",
+            "status:EXPERIMENTAL"
+          ]
+        },
+        {
+          "wall_index": 1,
+          "kind": "window",
+          "width_m": 1.0,
+          "height_m": 2.32,
+          "sill_m": 0.16,
+          "width_ci": [
+            1.0,
+            1.03
+          ],
+          "border_confidence": 1.0,
+          "provenance": [
+            "depth:measured",
+            "method:wall_plane_hole",
+            "status:EXPERIMENTAL"
+          ]
+        },
+        {
+          "wall_index": 2,
+          "kind": "window",
+          "width_m": 0.84,
+          "height_m": 1.64,
+          "sill_m": 1.0,
+          "width_ci": [
+            0.84,
+            0.84
+          ],
+          "border_confidence": 1.0,
+          "provenance": [
+            "depth:measured",
+            "method:wall_plane_hole",
+            "status:EXPERIMENTAL"
+          ]
+        }
+      ]
     }
   ],
   "stitched_plan": {
@@ -186,8 +253,67 @@
   },
   "damage": {
     "regions": [],
-    "status": "not implemented"
+    "status": "detector built and measured; not shipped because it could not separate a real defect from surface texture"
   },
+  "concealed_conditions": [
+    {
+      "rule": "low_confidence_surface",
+      "surface": "unspecified",
+      "finding": "21% of the scanned surface returned the lowest confidence depth, about 14.0 m2 of this room",
+      "recommended_action": "Inspect by hand. A time-of-flight sensor loses confidence on glass, mirrors, gloss paint and wet-look flooring, which are also the surfaces a visual inspection reads poorly.",
+      "extent_m2": 14.01,
+      "severity": "inspect"
+    },
+    {
+      "rule": "beyond_sensor_range",
+      "surface": "unspecified",
+      "finding": "about 3.6 m2 was measured beyond 5 m, where this sensor degrades",
+      "recommended_action": "Re-capture standing closer, 1 to 3 m from the surface. Dimensions relying on this region are weaker than their interval suggests.",
+      "extent_m2": 3.62,
+      "severity": "check"
+    }
+  ],
+  "scope_line_items": [
+    {
+      "surface": "floor",
+      "item": "floor covering",
+      "quantity": 12.654,
+      "ci_low": 12.455,
+      "ci_high": 12.856,
+      "unit": "m2",
+      "basis": "floor area from the wall polygon"
+    },
+    {
+      "surface": "ceiling",
+      "item": "ceiling paint",
+      "quantity": 12.654,
+      "ci_low": 12.455,
+      "ci_high": 12.856,
+      "unit": "m2",
+      "basis": "same footprint as the floor",
+      "note": "assumes a flat ceiling at one level"
+    },
+    {
+      "surface": "walls",
+      "item": "wall paint, net of openings",
+      "quantity": 36.706,
+      "ci_low": 36.026,
+      "ci_high": 37.385,
+      "unit": "m2",
+      "basis": "perimeter x ceiling height, less detected openings",
+      "note": "3 opening(s) subtracted, 5.87 m2; opening detection is experimental"
+    },
+    {
+      "surface": "perimeter",
+      "item": "skirting board",
+      "quantity": 14.253,
+      "ci_low": 14.14,
+      "ci_high": 14.366,
+      "unit": "m",
+      "basis": "room perimeter",
+      "note": "full perimeter; door openings not deducted"
+    }
+  ],
   "gates": [
     {
       "gate": "ceiling_height",

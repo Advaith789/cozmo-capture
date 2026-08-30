@@ -121,6 +121,46 @@ def cmd_measure(args: argparse.Namespace) -> int:
     return 0
 
 
+def _photo_height_only(path: Path, args: argparse.Namespace) -> int:
+    """Tier A: ceiling height only, measured photo by photo.
+
+    Wall geometry needs photographs joined into one reconstruction and eight
+    wide-baseline stills cannot be joined, so this reports the one dimension a
+    single photograph can carry and says plainly that it has nothing else.
+    """
+    from cozmo.ingest import camera
+
+    print("\nTier A measures ceiling height only. Wall lengths need the photos")
+    print("joined into one reconstruction, which eight wide-baseline stills")
+    print("cannot support: COLMAP registered 4 of our 29.")
+
+    heights = camera.photo_ceiling_heights(path)
+    if len(heights) < 3:
+        print(f"\nerror: only {len(heights)} photo(s) yielded a usable floor and "
+              f"ceiling. Shoot corner to corner with both junction lines in "
+              f"frame.", file=sys.stderr)
+        return 3
+
+    import statistics
+    med = statistics.median(heights)
+    rel = camera.PHOTO_HEIGHT_REL
+    spread = max(heights) - min(heights)
+    print(f"\nphotos used      {len(heights)}")
+    print(f"ceiling height   {med:.3f} m  [{med * (1 - rel):.3f}, "
+          f"{med * (1 + rel):.3f}]  (±{rel * 100:.0f}%)")
+    print(f"photo spread     {spread:.2f} m across individual photos")
+    print("provenance       depth:inferred | pose:none | scale:metric_depth_model "
+          "| method:per_photo_median | interval:cross_room_spread_±30pct")
+    if args.truth_height:
+        err = (med - args.truth_height) * 100
+        print(f"\naccuracy         {err:+.1f} cm vs tape "
+              f"({(med / args.truth_height - 1) * 100:+.1f}%)   "
+              f"{'PASS' if abs(err) / 100 / args.truth_height <= 0.08 else 'fail'} "
+              f"against the photo tier's ±8% gate")
+    print("\nNo wall lengths, no floor area, no plan: one dimension only.")
+    return 0
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     """One command per capture: raw export in, JSON contract and plan out."""
     path = Path(args.capture)
@@ -140,7 +180,8 @@ def cmd_run(args: argparse.Namespace) -> int:
     try:
         import numpy as np
 
-        from cozmo.contract import render, schema
+        from cozmo.contract import render, schema, scope
+        from cozmo.geometry import concealed
         from cozmo.geometry import room as room_mod
         from cozmo.geometry import openings as openings_mod
         from cozmo.geometry import walls
@@ -151,6 +192,9 @@ def cmd_run(args: argparse.Namespace) -> int:
         print("       python3 -m venv .venv && .venv/bin/pip install -r "
               "requirements.txt", file=sys.stderr)
         return 1
+
+    if tier == "A":
+        return _photo_height_only(path, args)
 
     t0 = time.time()
     try:
@@ -224,6 +268,13 @@ def cmd_run(args: argparse.Namespace) -> int:
             if d is not None:
                 draws.append(d)
 
+    multi, why = walls.spans_multiple_spaces(pts, fy, axes)
+    if multi:
+        print(f"\n[!] {why}.")
+        print("    We measure one room at a time; the multi-room stitch is not")
+        print("    built. The dimensions below describe the whole scanned")
+        print("    envelope, not a room. Re-capture one room per scan.")
+
     rm = room_mod.build(axes, height, name=args.name, draws=draws)
     if rm is not None:
         stable = openings_mod.find_stable(clouds, rm.walls, fy, cy,
@@ -243,6 +294,22 @@ def cmd_run(args: argparse.Namespace) -> int:
                   file=sys.stderr)
             return 4
 
+    line_items = scope.build(rm)
+    surface_m2 = (2 * rm.floor_area.value
+                  + rm.perimeter.value * rm.ceiling_height.value)
+    flags = (concealed.detect(cap.frames, fy, cy, room_surface_m2=surface_m2)
+             if tier == "C" else [])
+
+    print(f"\nscope line items")
+    for li in line_items:
+        print(f"  {li.surface:<10} {li.item:<28} {li.quantity:8.2f} {li.unit}"
+              f"  [{li.lo:.2f}, {li.hi:.2f}]")
+    if flags:
+        print(f"\nconcealed-condition flags   {len(flags)}")
+        for fl in flags:
+            print(f"  [{fl.severity}] {fl.rule}")
+            print(f"      {fl.finding}")
+
     gates = [
         schema.gate("ceiling_height", rm.ceiling_height, 0.015,
                     truth=args.truth_height),
@@ -252,7 +319,9 @@ def cmd_run(args: argparse.Namespace) -> int:
                       truth=(truth_walls[i % 2] if truth_walls else None))
           for i, m in enumerate(rm.wall_lengths)],
     ]
-    notes = [
+    notes = ([
+        "This capture appears to span more than one space; the dimensions "
+        "describe the scanned envelope, not a single room."] if multi else []) + [
         "Opening detection is EXPERIMENTAL and is not claimed against the "
         "opening-width gate: widths vary by up to a factor of two across "
         "frame counts, against a 2 cm gate.",
@@ -262,7 +331,9 @@ def cmd_run(args: argparse.Namespace) -> int:
     ]
 
     out = Path(args.out)
-    doc = schema.build(cap, [rm], gates=gates, notes=notes)
+    doc = schema.build(cap, [rm], gates=gates, notes=notes,
+                       scope_items=scope.to_json(line_items),
+                       concealed=concealed.to_json(flags))
     jpath = schema.write(doc, out / f"{args.name}.json")
     spath = render.write(rm, out / f"{args.name}.svg", title=args.name)
 

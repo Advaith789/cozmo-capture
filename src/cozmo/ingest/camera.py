@@ -277,3 +277,65 @@ def load_video(path: Path, max_views: int = MAX_FRAMES) -> Capture:
     return _finish(result, rgb, K, "B", str(path), {
         "views": len(images), "video_frames": total,
         "intrinsics_source": "assumed_26mm_equivalent"})
+
+
+# Spread observed across three rooms when measuring ceiling height photo by
+# photo: -30% to +20%. The interval is set from that rather than from the
+# scatter within one room, which would be optimistic.
+PHOTO_HEIGHT_REL = 0.30
+
+
+def photo_ceiling_heights(path: Path, max_photos: int = 24) -> list[float]:
+    """Ceiling height from each photo on its own, in metres.
+
+    Eight wide-baseline photographs cannot be joined into a reconstruction, and
+    COLMAP registering 4 of our 29 settles that. But a room's height does not
+    need photographs joined: a metric depth model turns one image into a cloud
+    with a floor and a ceiling in it, and the distance between them is the
+    height. One photo is noisy, so the median across photos is taken.
+
+    Returned as a list rather than a single figure so the caller can see how
+    much the photos disagreed, which is the honest basis for the interval.
+    """
+    import subprocess
+    import tempfile
+
+    from . import depth as depth_mod
+    from . import sfm as sfm_mod
+
+    if cv2 is None or not depth_mod.available():
+        return []
+
+    files = sorted(p for p in path.rglob("*") if p.suffix.lower() in IMAGE_EXT)
+    if len(files) > max_photos:
+        idx = np.linspace(0, len(files) - 1, max_photos).round().astype(int)
+        files = [files[i] for i in dict.fromkeys(idx)]
+
+    out: list[float] = []
+    for f in files:
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                png = Path(tmp) / "c.png"
+                subprocess.run(["sips", "-s", "format", "png", "-Z", "512",
+                                str(f), "--out", str(png)], capture_output=True)
+                img = cv2.imread(str(png), cv2.IMREAD_COLOR)
+            if img is None:
+                continue
+            rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            dmap = depth_mod.predict([rgb])[0]
+            h, w = rgb.shape[:2]
+            K = sfm_mod.intrinsics_from_fov(w, h, _exif_equiv35(f) or 26.0)
+            pts = depth_mod.backproject(dmap, K, np.eye(4), stride=2,
+                                        max_range=9.0)
+            if len(pts) < 5000:
+                continue
+            grav = _gravity_from_floor(pts)
+            if grav is None:
+                continue
+            y = (pts @ grav.T)[:, 1]
+            hgt = float(np.percentile(y, 99) - np.percentile(y, 1))
+            if 1.8 < hgt < 5.0:
+                out.append(hgt)
+        except Exception:
+            continue
+    return out

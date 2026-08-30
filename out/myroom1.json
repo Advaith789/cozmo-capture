@@ -1,6 +1,6 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-29T22:35:52+00:00",
+  "generated": "2026-08-29T23:48:28+00:00",
   "capture": {
     "source": "8_28_2026 - My room 1.zip",
     "tier": "C",
@@ -41,6 +41,7 @@
           "pose:device_optimised",
           "scale:sensor",
           "method:wall_plane_intersection",
+          "prior:rectangular_room(1.2deg_skew)",
           "interval:bootstrap_frames\u00d750"
         ],
         "samples": 50
@@ -56,6 +57,7 @@
           "pose:device_optimised",
           "scale:sensor",
           "method:wall_plane_intersection",
+          "prior:rectangular_room(1.2deg_skew)",
           "interval:bootstrap_frames\u00d750"
         ],
         "samples": 50
@@ -87,6 +89,7 @@
             "pose:device_optimised",
             "scale:sensor",
             "method:wall_plane_intersection",
+            "prior:rectangular_room(1.2deg_skew)",
             "interval:bootstrap_frames\u00d750"
           ],
           "samples": 50
@@ -102,6 +105,7 @@
             "pose:device_optimised",
             "scale:sensor",
             "method:wall_plane_intersection",
+            "prior:rectangular_room(1.2deg_skew)",
             "interval:bootstrap_frames\u00d750"
           ],
           "samples": 50
@@ -117,6 +121,7 @@
             "pose:device_optimised",
             "scale:sensor",
             "method:wall_plane_intersection",
+            "prior:rectangular_room(1.2deg_skew)",
             "interval:bootstrap_frames\u00d750"
           ],
           "samples": 50
@@ -132,6 +137,7 @@
             "pose:device_optimised",
             "scale:sensor",
             "method:wall_plane_intersection",
+            "prior:rectangular_room(1.2deg_skew)",
             "interval:bootstrap_frames\u00d750"
           ],
           "samples": 50
@@ -204,8 +210,50 @@
   },
   "damage": {
     "regions": [],
-    "status": "not implemented"
+    "status": "detector built and measured; not shipped because it could not separate a real defect from surface texture"
   },
+  "concealed_conditions": [],
+  "scope_line_items": [
+    {
+      "surface": "floor",
+      "item": "floor covering",
+      "quantity": 9.085,
+      "ci_low": 9.029,
+      "ci_high": 9.16,
+      "unit": "m2",
+      "basis": "floor area from the wall polygon"
+    },
+    {
+      "surface": "ceiling",
+      "item": "ceiling paint",
+      "quantity": 9.085,
+      "ci_low": 9.029,
+      "ci_high": 9.16,
+      "unit": "m2",
+      "basis": "same footprint as the floor",
+      "note": "assumes a flat ceiling at one level"
+    },
+    {
+      "surface": "walls",
+      "item": "wall paint, net of openings",
+      "quantity": 35.937,
+      "ci_low": 35.784,
+      "ci_high": 36.09,
+      "unit": "m2",
+      "basis": "perimeter x ceiling height, less detected openings",
+      "note": "1 opening(s) subtracted, 0.56 m2; opening detection is experimental"
+    },
+    {
+      "surface": "perimeter",
+      "item": "skirting board",
+      "quantity": 12.057,
+      "ci_low": 12.019,
+      "ci_high": 12.106,
+      "unit": "m",
+      "basis": "room perimeter",
+      "note": "full perimeter; door openings not deducted"
+    }
+  ],
   "gates": [
     {
       "gate": "ceiling_height",

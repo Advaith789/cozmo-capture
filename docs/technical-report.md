@@ -332,6 +332,14 @@ almost certainly why the brief sets the photo gate at ±8% while the LiDAR gate
 is ±1.5 cm: it does not expect reconstruction, it expects a rougher method that
 works from very few views.
 
+Published figures for the field agree with where our attempts landed, and point
+at the missing piece: a single photo with a known-size reference object measures
+to 5 to 10%, without one to 15 to 25%. Our photo tier, with no reference in
+frame, measured 15 to 30% out. The brief's gate for the tier is 8%. **The
+difference between failing and passing that gate is an object of known size in
+the shot**, which costs nothing and is now a required step of the protocol
+rather than a suggestion. We could not test it: our captures were already taken.
+
 The right approach for two to eight photos is therefore per-image metric depth,
 predicting absolute distance for each photograph and assembling those, rather
 than triangulating between them. The depth model for it is already built and
@@ -376,6 +384,16 @@ claiming this would cost more than it earns.
 
 **No stitched multi-room plan.** Five rooms measured individually. The whole
 property plan that the brief calls the product surface does not exist.
+
+**Scope line items and concealed-condition flags do ship.** Line items are a
+takeoff from geometry already measured, so each carries the interval of the
+dimension it came from, and wall area is labelled gross or net depending on
+whether openings were found. Concealed flags are four named rules over the
+confidence maps, the sensor's range and simple plausibility: where a
+time-of-flight sensor loses confidence is where glass, gloss and wet-look
+surfaces are, which is also where a condition hides from a visual inspection.
+No flag claims to have found damage. Each says what the capture could not see,
+and what to do about it.
 
 **No damage detection.** Two classes were staged and tape measured, a 2×3 inch
 ellipse in the hallway and a 3×3 inch square in friend 2's room. Nothing

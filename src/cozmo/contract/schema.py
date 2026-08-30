@@ -93,7 +93,9 @@ def room_json(room: Room) -> dict[str, Any]:
 
 def build(capture: Capture, rooms: list[Room],
           gates: list[dict[str, Any]] | None = None,
-          notes: list[str] | None = None) -> dict[str, Any]:
+          notes: list[str] | None = None,
+          scope_items: list[dict[str, Any]] | None = None,
+          concealed: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     return {
         "schema": SCHEMA_VERSION,
         "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -112,7 +114,13 @@ def build(capture: Capture, rooms: list[Room],
             "status": "single-room capture; adjacency requires a multi-room "
                       "capture and opening detection",
         },
-        "damage": {"regions": [], "status": "not implemented"},
+        "damage": {
+            "regions": [],
+            "status": "detector built and measured; not shipped because it "
+                      "could not separate a real defect from surface texture",
+        },
+        "concealed_conditions": concealed or [],
+        "scope_line_items": scope_items or [],
         "gates": gates or [],
         "known_limitations": notes or [],
     }

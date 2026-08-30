@@ -65,9 +65,12 @@ measured by itself.
 4. In every photo, keep **both junction lines in frame**: where the wall meets the floor, and where it meets the ceiling.
    - *These two lines carry the room's height and the wall's run. A photo missing either cannot be measured, however sharp it is.*
 5. Stand **back against the wall** so the opposite corner is as far away as possible, and step back until the whole corner fits.
-6. **Connector shots.** Stand in each doorway and take one photo into each of the two rooms it joins.
-7. **If you can take more than eight**, take twenty to thirty in a slow continuous circle, one small step between shots, each overlapping the last by about two thirds. That is enough to join them properly and it measures far better. Our own captures did not do this, which is why the tier is unscored in this submission.
-8. Put each room's photos in a folder named in lower case with underscores: `kitchen`, `living_room`, `bedroom_1`, `hallway`.
+6. **Put a sheet of A4 or US Letter paper flat on the floor, in view of every photo. This is not optional.**
+   - *A photograph has no idea how big anything in it is. A page of known size is the only thing in the frame that fixes the scale. Published figures put a single photo with a reference object at 5 to 10% error and a single photo without one at 15 to 25%; the gate for this tier is 8%. Our own captures had no reference and measured 15 to 30% out, which matches.*
+   - *Any object of exactly known size works: a sheet of paper, a tape measure extended to one metre, a credit card. Paper is easiest to see from across a room.*
+7. **Connector shots.** Stand in each doorway and take one photo into each of the two rooms it joins.
+8. **If you can take more than eight**, take twenty to thirty in a slow continuous circle, one small step between shots, each overlapping the last by about two thirds. That is enough to join them properly and it measures far better. Our own captures did not do this, which is why the tier is unscored in this submission.
+9. Put each room's photos in a folder named in lower case with underscores: `kitchen`, `living_room`, `bedroom_1`, `hallway`.
 
 ## 4. Tier B, Video walkthrough, under 10 min per floor
 

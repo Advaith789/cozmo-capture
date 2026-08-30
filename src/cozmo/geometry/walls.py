@@ -259,3 +259,41 @@ def skirting_inset(points: np.ndarray, wall: Wall, floor_y: float,
         return None
     d = (proj[sel] - wall.offset) * np.sign(wall.offset)
     return float(np.median(d))
+
+
+def spans_multiple_spaces(points: np.ndarray, floor_y: float,
+                          axes: "RoomAxes", gap_m: float = 0.45,
+                          floor_slab: float = 0.10) -> tuple[bool, str]:
+    """Whether the floor is one continuous room or several joined together.
+
+    The wall detector fits the outermost planes it finds, so a capture covering
+    two rooms and the doorway between them yields one rectangle spanning both
+    and an area that belongs to no real room. Nothing downstream notices,
+    because a fictitious room is geometrically well formed.
+
+    A real room's floor is continuous. Two rooms joined by a doorway are two
+    dense regions with a thin neck between them, so a run of near-empty bins
+    across the floor is the signature. Reported rather than silently split:
+    segmenting the rooms properly is the multi-room stitch, which is unbuilt.
+    """
+    y = points[:, 1]
+    floor = points[np.abs(y - floor_y) < floor_slab][:, [0, 2]]
+    if len(floor) < 5000:
+        return False, ""
+
+    for name, axis in (("A", axes.axis_a), ("B", axes.axis_b)):
+        proj = floor @ axis
+        lo, hi = np.percentile(proj, [1, 99])
+        bins = max(int((hi - lo) / 0.15), 8)
+        hist, edges = np.histogram(proj, bins=bins, range=(lo, hi))
+        thin = hist < hist.max() * 0.06
+        run = best = 0
+        for t in thin:
+            run = run + 1 if t else 0
+            best = max(best, run)
+        gap = best * (hi - lo) / bins
+        if gap >= gap_m:
+            return True, (f"a {gap * 100:.0f} cm stretch of axis {name} has "
+                          f"almost no floor, so this capture looks like more "
+                          f"than one space joined by a doorway")
+    return False, ""

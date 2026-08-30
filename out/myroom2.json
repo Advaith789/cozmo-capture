@@ -1,6 +1,6 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-29T23:18:03+00:00",
+  "generated": "2026-08-29T23:47:10+00:00",
   "capture": {
     "source": "8_29_2026 - My room 2.zip",
     "tier": "C",
@@ -244,8 +244,59 @@
   },
   "damage": {
     "regions": [],
-    "status": "not implemented"
+    "status": "detector built and measured; not shipped because it could not separate a real defect from surface texture"
   },
+  "concealed_conditions": [
+    {
+      "rule": "low_confidence_surface",
+      "surface": "unspecified",
+      "finding": "19% of the scanned surface returned the lowest confidence depth, about 10.6 m2 of this room",
+      "recommended_action": "Inspect by hand. A time-of-flight sensor loses confidence on glass, mirrors, gloss paint and wet-look flooring, which are also the surfaces a visual inspection reads poorly.",
+      "extent_m2": 10.56,
+      "severity": "inspect"
+    }
+  ],
+  "scope_line_items": [
+    {
+      "surface": "floor",
+      "item": "floor covering",
+      "quantity": 9.271,
+      "ci_low": 9.209,
+      "ci_high": 9.301,
+      "unit": "m2",
+      "basis": "floor area from the wall polygon"
+    },
+    {
+      "surface": "ceiling",
+      "item": "ceiling paint",
+      "quantity": 9.271,
+      "ci_low": 9.209,
+      "ci_high": 9.301,
+      "unit": "m2",
+      "basis": "same footprint as the floor",
+      "note": "assumes a flat ceiling at one level"
+    },
+    {
+      "surface": "walls",
+      "item": "wall paint, net of openings",
+      "quantity": 32.976,
+      "ci_low": 32.858,
+      "ci_high": 33.093,
+      "unit": "m2",
+      "basis": "perimeter x ceiling height, less detected openings",
+      "note": "3 opening(s) subtracted, 3.17 m2; opening detection is experimental"
+    },
+    {
+      "surface": "perimeter",
+      "item": "skirting board",
+      "quantity": 12.179,
+      "ci_low": 12.139,
+      "ci_high": 12.199,
+      "unit": "m",
+      "basis": "room perimeter",
+      "note": "full perimeter; door openings not deducted"
+    }
+  ],
   "gates": [
     {
       "gate": "ceiling_height",
@@ -294,6 +345,7 @@
     }
   ],
   "known_limitations": [
+    "This capture appears to span more than one space; the dimensions describe the scanned envelope, not a single room.",
     "Opening detection is EXPERIMENTAL and is not claimed against the opening-width gate: widths vary by up to a factor of two across frame counts, against a 2 cm gate.",
     "Damage regions not implemented.",
     "Single-room capture: no stitched multi-room plan or adjacency.",

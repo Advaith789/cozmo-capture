@@ -1,6 +1,6 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-29T22:37:08+00:00",
+  "generated": "2026-08-29T23:49:05+00:00",
   "capture": {
     "source": "8_29_2026 - Friend - 1 Room.zip",
     "tier": "C",
@@ -41,6 +41,7 @@
           "pose:device_optimised",
           "scale:sensor",
           "method:wall_plane_intersection",
+          "prior:rectangular_room(0.7deg_skew)",
           "interval:bootstrap_frames\u00d750"
         ],
         "samples": 50
@@ -56,6 +57,7 @@
           "pose:device_optimised",
           "scale:sensor",
           "method:wall_plane_intersection",
+          "prior:rectangular_room(0.7deg_skew)",
           "interval:bootstrap_frames\u00d750"
         ],
         "samples": 50
@@ -87,6 +89,7 @@
             "pose:device_optimised",
             "scale:sensor",
             "method:wall_plane_intersection",
+            "prior:rectangular_room(0.7deg_skew)",
             "interval:bootstrap_frames\u00d750"
           ],
           "samples": 50
@@ -102,6 +105,7 @@
             "pose:device_optimised",
             "scale:sensor",
             "method:wall_plane_intersection",
+            "prior:rectangular_room(0.7deg_skew)",
             "interval:bootstrap_frames\u00d750"
           ],
           "samples": 50
@@ -117,6 +121,7 @@
             "pose:device_optimised",
             "scale:sensor",
             "method:wall_plane_intersection",
+            "prior:rectangular_room(0.7deg_skew)",
             "interval:bootstrap_frames\u00d750"
           ],
           "samples": 50
@@ -132,6 +137,7 @@
             "pose:device_optimised",
             "scale:sensor",
             "method:wall_plane_intersection",
+            "prior:rectangular_room(0.7deg_skew)",
             "interval:bootstrap_frames\u00d750"
           ],
           "samples": 50
@@ -247,8 +253,67 @@
   },
   "damage": {
     "regions": [],
-    "status": "not implemented"
+    "status": "detector built and measured; not shipped because it could not separate a real defect from surface texture"
   },
+  "concealed_conditions": [
+    {
+      "rule": "low_confidence_surface",
+      "surface": "unspecified",
+      "finding": "21% of the scanned surface returned the lowest confidence depth, about 14.0 m2 of this room",
+      "recommended_action": "Inspect by hand. A time-of-flight sensor loses confidence on glass, mirrors, gloss paint and wet-look flooring, which are also the surfaces a visual inspection reads poorly.",
+      "extent_m2": 14.0,
+      "severity": "inspect"
+    },
+    {
+      "rule": "beyond_sensor_range",
+      "surface": "unspecified",
+      "finding": "about 3.9 m2 was measured beyond 5 m, where this sensor degrades",
+      "recommended_action": "Re-capture standing closer, 1 to 3 m from the surface. Dimensions relying on this region are weaker than their interval suggests.",
+      "extent_m2": 3.91,
+      "severity": "check"
+    }
+  ],
+  "scope_line_items": [
+    {
+      "surface": "floor",
+      "item": "floor covering",
+      "quantity": 12.653,
+      "ci_low": 12.747,
+      "ci_high": 12.808,
+      "unit": "m2",
+      "basis": "floor area from the wall polygon"
+    },
+    {
+      "surface": "ceiling",
+      "item": "ceiling paint",
+      "quantity": 12.653,
+      "ci_low": 12.747,
+      "ci_high": 12.808,
+      "unit": "m2",
+      "basis": "same footprint as the floor",
+      "note": "assumes a flat ceiling at one level"
+    },
+    {
+      "surface": "walls",
+      "item": "wall paint, net of openings",
+      "quantity": 36.503,
+      "ci_low": 36.362,
+      "ci_high": 36.643,
+      "unit": "m2",
+      "basis": "perimeter x ceiling height, less detected openings",
+      "note": "3 opening(s) subtracted, 6.07 m2; opening detection is experimental"
+    },
+    {
+      "surface": "perimeter",
+      "item": "skirting board",
+      "quantity": 14.252,
+      "ci_low": 14.303,
+      "ci_high": 14.337,
+      "unit": "m",
+      "basis": "room perimeter",
+      "note": "full perimeter; door openings not deducted"
+    }
+  ],
   "gates": [
     {
       "gate": "ceiling_height",
@@ -282,6 +347,7 @@
     }
   ],
   "known_limitations": [
+    "This capture appears to span more than one space; the dimensions describe the scanned envelope, not a single room.",
     "Opening detection is EXPERIMENTAL and is not claimed against the opening-width gate: widths vary by up to a factor of two across frame counts, against a 2 cm gate.",
     "Damage regions not implemented.",
     "Single-room capture: no stitched multi-room plan or adjacency.",
