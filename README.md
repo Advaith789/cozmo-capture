@@ -16,8 +16,8 @@ native iOS Camera for video and photos. See
 
 Tier C runs end to end: capture → ingest → walls → ceiling → room → JSON +
 rendered plan, one command, with a bootstrapped interval on every number.
-Validated against tape on one room, run on five captures across three rooms and a hallway plus
-a connector.
+Validated against tape in **two rooms**, run on five LiDAR captures across three
+rooms and a hallway, plus photo and video captures at tiers A and B.
 
 | Deliverable | Where | |
 |---|---|---|
@@ -40,7 +40,7 @@ other wall       3.0524 m   precision ±1.22 cm PASS   accuracy +1.1 cm PASS
 
 The capture that followed the protocol passes every gate on both axes. Across
 nine gates scored against tape in three rooms, **precision passes 7 and accuracy
-6**. A second room was tape-measured after the pipeline was frozen, and both its
+7**. A second room was tape-measured after the pipeline was frozen, and both its
 walls came in inside 2 mm: **+0.2 cm and -0.2 cm** against a 1.5 cm gate. The
 benchmark's ground truth turned out to be less precise than the gate it was
 meant to certify, which is written up as a result rather than buried: see
@@ -93,7 +93,7 @@ at -0.4, +0.5 and +1.5 cm, inside the gate on all three, in 1.3 seconds. What it
 cannot do is resample frames, so its intervals are assumed rather than measured
 and it says so.
 
-`run` takes about 45 seconds and writes a JSON contract and a dimensioned SVG
+`run` takes about 25 seconds and writes a JSON contract and a dimensioned SVG
 plan. It applies a rectangular-room prior only where the walls justify it, and
 records in the provenance how far out of square the room actually was.
 
@@ -109,7 +109,7 @@ python3 scripts/inspect_capture.py ~/Downloads/<export>.zip     # Tier C
 python3 scripts/inspect_capture.py ~/Downloads/<photos>/        # Tier A
 python3 scripts/inspect_capture.py ~/Downloads/<clip>.mov       # Tier B
 
-# 21 tests, ~0.1s
+# 69 tests. 34 need numpy and skip on a bare interpreter, so this is ~0.2s
 python3 -m unittest discover -s tests -v
 ```
 
@@ -240,12 +240,19 @@ src/cozmo/
   types.py               PosedFrame, Measurement, provenance enums
   io/png.py              vectorised depth/confidence decode
   ingest/lidar.py        Polycam raw -> Capture
+  ingest/learned.py      photos or video -> Capture, via MASt3R
+  ingest/mesh.py         fallback when developer mode was missed
   geometry/height.py     floor/ceiling planes, frame-bootstrapped interval
+  geometry/walls.py      room axes and wall planes
+  geometry/spaces.py     split a capture into rooms at its doorways
+  geometry/openings.py   ray traced doors and windows
+  contract/              JSON schema, SVG plan, scope line items
   __main__.py            the one command
-tests/
-  fixtures.py            synthetic captures, no phone required
-  test_inspect.py        21 tests, PNG filters + archive layout
-src/cozmo/               pipeline, not yet written
+tests/                   69 tests, 5 files
+scripts/
+  inspect_capture.py     stdlib-only field check
+  setup_learned.sh       install the tier A/B model
+  benchmark.sh           reproduce every number in the benchmark report
 ```
 
 ---

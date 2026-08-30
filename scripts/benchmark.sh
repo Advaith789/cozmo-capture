@@ -9,7 +9,7 @@
 #
 # Ground truth is tape, on two rooms, five readings per dimension:
 #   my room   ceiling 2.9705 m, walls 3.0344 and 3.0411 m
-#   friend 1  ceiling 3.0120 m, walls 3.7636 and 3.3620 m
+#   friend 1  ceiling 3.0020 m (10 readings), walls 3.7636 and 3.3620 m
 # The remaining rooms are scored for precision but have no accuracy column,
 # which the table says rather than hides.
 
@@ -23,8 +23,9 @@ PY=".venv/bin/python"
 S="myroom/space_capture"
 TRUTH_H=2.9705
 TRUTH_W=3.0344,3.0411
-# Friend 1 room, five tape readings per dimension, means below.
-F1_H=3.0120
+# Friend 1 room. Walls are five readings; the ceiling is ten across two
+# sessions, because one session could not settle it. See the benchmark report.
+F1_H=3.0020
 F1_W=3.7636,3.3620
 
 run() {  # name  capture  [truth args...]

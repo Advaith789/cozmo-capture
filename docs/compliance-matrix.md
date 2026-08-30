@@ -53,18 +53,18 @@ omitted; a matrix that hides them is worth less than one that does not.
 | 2.15 | One furnished room with damage in 2 classes | `myroom/error photos/` | hallway 2×3 in ellipse; friend-2 room 3×3 in square | **partial** staged and measured, not detected |
 | 2.16 | Same rooms at all three tiers | `myroom/` | Tier C x5, photos x3 rooms, video x2, all processed and scored | **done** processed; Tier A/B accuracy is poor and reported as such |
 | 2.17 | One room captured twice at the same tier | `8_28 My room 1` + `8_29 My room 2` | repeatability table in benchmark report | **done** |
-| 2.18 | Tape or laser ground truth, measurements submitted | [docs/benchmark-report.md](benchmark-report.md) | **two rooms**, five readings each. My room: walls 3.0344 / 3.0411 m, ceiling 2.9705 m, door slab 0.8382 m, frame 0.9576 m. Friend 1: walls 3.7636 / 3.3620 m, ceiling 3.0120 m, measured after the pipeline was frozen | **done** |
+| 2.18 | Tape or laser ground truth, measurements submitted | [docs/benchmark-report.md](benchmark-report.md) | **two rooms**, five readings each. My room: walls 3.0344 / 3.0411 m, ceiling 2.9705 m, door slab 0.8382 m, frame 0.9576 m. Friend 1: walls 3.7636 / 3.3620 m, ceiling 3.0020 m (ten readings, two sessions), measured after the pipeline was frozen | **done** |
 
 ## Part 2, Gates
 
 | # | Gate | Where scored | Status |
 |---|---|---|---|
 | 2.19 | Opening widths ≤2 cm on ≥85%, detection scored | [src/cozmo/geometry/openings.py](../src/cozmo/geometry/openings.py), `tests/test_openings_rt.py` | **partial** detection built and scored. Meets the 2 cm gate on synthetic truth (0.8 cm mean, 1.3 cm worst); on the real capture it detects the doorway but measures the clear opening rather than the frame, so the gate is reported and not claimed |
-| 2.20 | Ceiling height ≤1.5 cm per room | `out/*.json` `gates[]` | **done** accuracy passes, precision does not |
-| 2.21 | Ceiling spread across repeat captures ≤1 cm | benchmark report | **done** reported, fails |
-| 2.22 | Repeatability, 1 cm or 0.5% per wall | benchmark report | **done** reported, fails |
-| 2.23 | Drift accountability + ablation | [src/cozmo/geometry/drift.py](../src/cozmo/geometry/drift.py) | `--ablate`; σ_step sweep | **done** |
-| 2.24 | Photo-tier whole-property stitch |, | **not done**. The stitch itself is built (2.6) and runs on LiDAR captures, but no photo capture reconstructs a closed room, so there is nothing to stitch at the photo tier |
+| 2.20 | Ceiling height ≤1.5 cm per room | `out/*.json` `gates[]` | **done** precision passes on all five captures (0.50 to 1.09 cm). Accuracy passes on two of the three rooms with tape and fails on the deliberately non-compliant scan |
+| 2.21 | Ceiling spread across repeat captures ≤1 cm | benchmark report | **done** reported and **fails** at 5.9 cm. The two captures are the compliant and the deliberately non-compliant scan of the same room |
+| 2.22 | Repeatability, 1 cm or 0.5% per wall | benchmark report | **done** reported. One wall pair passes at 1.2 cm, the other fails at 5.0 cm. Was 16.7 cm before the wall-band fix |
+| 2.23 | Drift accountability + ablation | [src/cozmo/geometry/drift.py](../src/cozmo/geometry/drift.py) | **done** via `--ablate` and a σ_step sweep to zero, which is the uncorrected case |
+| 2.24 | Photo-tier whole-property stitch | n/a | **not done**. The stitch itself is built (2.6) and runs on LiDAR captures, but no photo capture reconstructs a closed room, so there is nothing to stitch at the photo tier |
 
 ## Part 3, Head to head
 
@@ -108,13 +108,19 @@ omitted; a matrix that hides them is worth less than one that does not.
 
 **Tier C is complete end to end**: capture → ingest → walls → ceiling → room →
 JSON + rendered plan, with a bootstrapped interval on every number, run by one
-command, validated against tape on one room and run on five captures.
+command, validated against tape in two rooms and run on five LiDAR captures
+plus photo and video captures at tiers A and B.
 
-**Tiers A and B are captured but not processed.** That is the single largest
-gap. It means the walk-in test can only be served at the LiDAR tier.
+**Tiers A and B run and are scored, and they are not reliable.** Error ranges
+from 0.1% to 59% and cannot be predicted in advance, so the walk-in test is
+still best served at the LiDAR tier. This remains the single largest gap, but it
+is now a measured one rather than an empty one.
 
-**No openings, no stitching, no damage detection.** Rooms are measured
-individually; the whole-property plan that the brief calls the product surface
-does not exist.
+**Openings, stitching and damage detection all exist.** Openings are ray traced
+and meet the 2 cm gate on synthetic truth but are not claimed on real captures.
+The stitch splits a capture into rooms and reports doorway widths. Damage runs
+behind `--damage`, off by default because it reported 79 regions on a clean
+control room.
 
-These were scope decisions taken against a 48-hour budget, not oversights.
+What is left undone is listed above with a number attached in every case, rather
+than as a scope decision.

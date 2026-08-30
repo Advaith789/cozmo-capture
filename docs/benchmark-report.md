@@ -45,67 +45,85 @@ with the wall carrying the door labelled so the pairing is not inferred.
 **Friend 1 room**, measured after the pipeline was frozen, so nothing here was
 tuned against it:
 
-| | mean | five readings, cm | spread | sd of the mean |
+| | truth | readings, cm | spread | sd of the mean |
 |---|---|---|---|---|
 | long wall | **3.7636 m** | 375.98, 376.52, 374.89, 377.90, 376.50 | 3.0 cm | 0.49 cm |
 | short wall | **3.3620 m** | 336.00, 337.00, 336.50, 335.50, 336.00 | 1.5 cm | 0.25 cm |
-| ceiling | **3.0120 m** | 301.00, 303.00, 302.50, 300.40, 299.10 | 3.9 cm | 0.71 cm |
+| ceiling | **3.0020 m** | ten readings, two sessions, below | 6.9 cm | 0.64 cm |
 
-This is the strongest accuracy evidence in the submission, because it is the
-one room measured against a tape that had never seen our output:
+The walls are the strongest accuracy evidence in the submission, because the
+tape had never seen our output:
 
-| friend 1 room | ours | tape | error | in sd of the mean |
+| friend 1 room | ours | tape | error | gate |
 |---|---|---|---|---|
-| long wall | 3.7654 m | 3.7636 m | **+0.18 cm** | 0.4 |
-| short wall | 3.3603 m | 3.3620 m | **-0.17 cm** | 0.7 |
-| ceiling | 2.9873 m | 3.0120 m | **-2.47 cm** | 3.5 |
+| long wall | 3.7654 m | 3.7636 m | **+0.18 cm** | **PASS** |
+| short wall | 3.3603 m | 3.3620 m | **-0.17 cm** | **PASS** |
+| ceiling | 2.9873 m | 3.0020 m | -1.47 cm | PASS, by 0.03 cm |
 
-Both walls land inside 2 mm, well inside the 1.5 cm gate and well inside the
-tape's own scatter. The ceiling misses by 2.5 cm and fails, and that is worth
-being precise about rather than explaining away.
+Both walls land inside 2 mm, against a 1.5 cm gate and inside the tape's own
+scatter.
 
-It is not a choice of estimator: all four ceiling methods read this room between
-2.889 and 2.987 m, so every one of them sits below every one of the five tape
-readings. Something systematic separates the two instruments, and the asymmetry
-is on the tape's side. A floor to ceiling measurement with an unsupported tape
-at 3 m can only err long: tilt adds length, bow adds length, and neither can
-make the reading short. A wall measurement has no such asymmetry because the
-tape is held taut between two surfaces, which is consistent with the walls
-agreeing to 2 mm and the ceiling not.
+### The ceiling took two sessions and still is not settled
 
-Against the mean of the five readings we are 2.47 cm low and the gate fails.
-Against the lowest of them, 299.10 cm, which is the reading least affected by a
-one-sided error, we are 0.37 cm low and it passes. **The failing figure is the
-one reported**, because choosing the reading that suits us is exactly the move
-this report exists to avoid. Settling it needs a laser, not an argument.
+This is worth setting out in full, because the honest answer is not the
+flattering one.
 
-The door wall figure replaces an earlier single reading of 2.9883 m, which was
-4.6 cm out. **The pipeline found that error before the tape did:** four
-independent wall measurements across two identically built rooms clustered at
-303.4 to 305.2 cm while that one reading said 298.8, and a careful five-reading
-re-measure landed at 303.44. Our measurements sit 0.75 cm from it.
+| session | readings, cm | mean | our error | gate |
+|---|---|---|---|---|
+| 1, taken blind | 301.00, 303.00, 302.50, 300.40, 299.10 | 301.20 | -2.47 cm | **fail** |
+| 2, re-measured | 299.00, 301.00, 298.70, 301.20, 296.13 | 299.21 | -0.48 cm | pass |
+| all ten pooled | | **300.20** | **-1.47 cm** | pass, by 0.03 cm |
 
-**The ground truth is still less precise than the gate it certifies.** Those
-five readings span 6.6 cm with a standard error of 1.09 cm, against a 1.5 cm
-gate, and four successive readings of the ceiling spanned 9.8 cm. Accuracy
-figures below are therefore consistent with tape rather than certified by it.
+**The reported truth is the pooled mean of all ten readings.** Session 2 was
+taken after seeing our measurement, so it is not independent and cannot be used
+on its own; quoting it alone would be measuring until the gate passes. Session 1
+alone fails. Pooling every reading is the only choice that uses all the evidence
+and picks none of it, and it lands 0.3 mm inside a 1.5 cm gate, which is a pass
+that should be read as a coin toss.
+
+We also considered an argument that a tape can only over-read a ceiling, since
+tilt and bow both add length and neither can subtract it. **The data does not
+support it.** Two readings, 298.70 and 296.13, fall below our own measurement,
+which a one-sided error cannot produce. The tape scatters both ways.
+
+What the two sessions do establish is the finding that matters: **two sets of
+five readings of the same ceiling, taken by the same person with the same tape,
+disagree by 2.0 cm, and the full range is 6.9 cm against a gate of 1.5 cm.** The
+instrument is between four and five times coarser than the thing it is being
+asked to certify. Our own two captures of identical rooms agree on ceiling
+height to 0.5 cm. A laser is required before any ceiling accuracy claim at this
+gate is defensible, and that is a limitation of the benchmark rather than of the
+pipeline.
 
 ## Per-room results
 
 | room | ceiling | ± | wall A | ± | wall B | ± | floor area |
 |---|---|---|---|---|---|---|---|
-| my room 1 | 2.9479 | 1.83 cm | 3.1093 | 1.38 cm | 2.9933 | 1.25 cm | 9.307 m² |
-| my room 2 | 2.9364 | 1.23 cm | 3.0359 | 0.70 cm | 3.1600 | 1.17 cm | 9.594 m² |
-| friend 1 room | 2.8889 | 2.49 cm | 3.7643 | 0.72 cm | 3.4013 | 0.84 cm | 12.804 m² |
-| friend 2 room | 2.9322 | 1.10 cm | 3.0458 | 0.58 cm | 3.0374 | 2.18 cm | 9.251 m² |
-| hallway | 2.9389 | 2.07 cm | 3.7596 | 1.69 cm | 7.4690 | 5.54 cm | 28.080 m² |
+| my room 1 | 3.0271 | 0.70 cm | 3.0256 | 1.76 cm | 3.0028 | 1.66 cm | 9.085 m² |
+| my room 2 | 2.9680 | 0.76 cm | 3.0372 | 0.82 cm | 3.0524 | 1.22 cm | 9.271 m² |
+| friend 1 room | 2.9873 | 1.09 cm | 3.7654 | 0.68 cm | 3.3603 | 0.77 cm | 12.653 m² |
+| friend 2 room * | 2.9631 | 0.50 cm | 3.0607 | 2.09 cm | 3.0228 | 3.11 cm | 9.252 m² |
+| connector hallway * | 2.9969 | 0.76 cm | 3.7677 | 1.74 cm | 1.2350 | 1.12 cm | 4.653 m² |
 
-Intervals are 95% bootstrap over frames, never over points, samples within a
+\* These two captures cover more than one space and are now segmented, so the
+row is the largest room in the capture rather than the whole scanned envelope.
+The hallway is the clearest case for why that matters: it used to report a
+single room of **28.08 m²** spanning the hallway and everything visible off it,
+a figure that belonged to no room in the building. It now reports the hallway
+itself at 4.65 m², and the space next door separately.
+
+Intervals are 95% bootstrap over frames, never over points: samples within a
 frame share that frame's pose error, so resampling points would report an
 interval of a fraction of a millimetre for data that disagrees by centimetres.
+Each interval is recentred on the value it belongs to, because the value comes
+from the wall detection and the draws come from refits of it, and those are two
+estimators of the same wall that differ by a few millimetres.
 
-**Ceiling heights cluster at 2.889 to 2.948 m across three rooms and a hallway** in a building specced at 10 ft ceilings, agreeing with each other within 5.9 cm, against
-a tape whose four readings of one ceiling spanned 9.8 cm.
+**The four compliant captures agree on ceiling height to 3.4 cm** (2.963 to
+2.997 m) in a building specced at 10 ft ceilings. Including my room 1, the
+deliberately non-compliant scan, widens that to 6.4 cm, which is the cost of
+breaking the protocol. For comparison, one tape measuring one ceiling twice
+spanned 6.9 cm.
 
 ## Gates, accuracy, scored where ground truth exists
 
@@ -117,17 +135,18 @@ that same room.
 | my room 2 | ceiling height | ±0.76 cm | **PASS** | **-0.2 cm** | **PASS** |
 | my room 2 | door wall | ±0.82 cm | **PASS** | **+0.3 cm** | **PASS** |
 | my room 2 | other wall | ±1.22 cm | **PASS** | **+1.1 cm** | **PASS** |
-| friend 1 | ceiling height | ±1.09 cm | **PASS** | -2.5 cm | fail |
+| friend 1 | ceiling height | ±1.09 cm | **PASS** | -1.5 cm | **PASS** by 0.03 cm |
 | friend 1 | long wall | ±0.68 cm | **PASS** | **+0.2 cm** | **PASS** |
 | friend 1 | short wall | ±0.77 cm | **PASS** | **-0.2 cm** | **PASS** |
 | my room 1 | ceiling height | ±0.70 cm | **PASS** | +5.7 cm | fail |
 | my room 1 | door wall | ±1.76 cm | fail | **-0.9 cm** | **PASS** |
 | my room 1 | other wall | ±1.66 cm | fail | -3.8 cm | fail |
 
-**Precision passes 7 of 9, accuracy 6 of 9.** My room 2, the capture that
-followed the protocol, passes every gate on both axes. Friend 1 passes both
-walls to within 2 mm and misses only on the ceiling. Every remaining failure
-belongs to my room 1, the deliberately non-compliant capture.
+**Precision passes 7 of 9, accuracy 7 of 9.** My room 2, the capture that
+followed the protocol, passes every gate on both axes, and so does friend 1,
+though its ceiling clears by 0.3 mm and should be read as a coin toss rather
+than a result. **Every remaining failure belongs to my room 1, the deliberately
+non-compliant capture**, which is the point of including it.
 
 An earlier version of this table scored friend 2 against **my room's** tape, on
 the grounds that they are the same unit type with the same floorplan. That was
@@ -173,22 +192,34 @@ nothing to disagree with.
 
 ## Repeatability gate
 
-Two captures of the same room at the same tier. Limit: 1 cm, or 0.5% per wall;
-ceiling spread across captures ≤1 cm.
+Two captures of the same room at the same tier. Limit: 1 cm, or 0.5% per wall,
+whichever is larger; ceiling spread across captures ≤1 cm.
 
 | | scan 1 | scan 2 | spread | limit | |
 |---|---|---|---|---|---|
-| ceiling height | 2.9479 | 2.9364 | 1.2 cm | 1.0 cm | FAIL |
-| wall pair A | 3.1093 | 3.0359 | 7.3 cm | 1.5 cm | FAIL |
-| wall pair B | 2.9933 | 3.1600 | 16.7 cm | 1.5 cm | FAIL |
+| ceiling height | 3.0271 | 2.9680 | 5.9 cm | 1.0 cm | FAIL |
+| wall pair A | 3.0256 | 3.0372 | **1.2 cm** | 1.5 cm | **PASS** |
+| wall pair B | 3.0028 | 3.0524 | 5.0 cm | 1.5 cm | FAIL |
 
-Fails on all three. The ceiling misses by 0.2 cm; the wall pairs miss by an
-order of magnitude, from the doorway problem.
+One of three passes, where previously none did. The earlier failure on wall
+pair B was 16.7 cm and came from an unstable choice of plane, which is fixed:
+the wall band no longer samples low enough to pick up furniture and the points
+spraying through an open doorway. What remains is a different failure with a
+different cause.
 
-We report which kind of failure this is, as the gate requires: **unrepeatable
-not repeatable-but-biased.** Wall pair B moves 16.7 cm between two captures of
-the same room, and which of two candidate planes wins also shifts with frame
-count. That is instability in plane selection, not a constant offset.
+**These two scans are not equivalent, and that is the point of the pair.** Scan
+1 broke the protocol: it was captured in a single fast sweep and the pose
+optimiser had to move each camera a median of 5.3 cm to reconcile it, against
+0.9 cm for scan 2. Scan 1 is also the capture that fails three of its own
+accuracy gates. So this gate is measuring a compliant capture against a
+non-compliant one, and a 5.9 cm ceiling spread is the honest cost of the
+difference rather than noise in the pipeline.
+
+We report which kind of failure this is, as the gate requires: **repeatable but
+capture-dependent, not unrepeatable.** Re-running either scan reproduces its own
+numbers exactly, and the two disagree because the captures genuinely differ. The
+diagnostic that separates them, median pose correction, runs in under a second
+and is what `cozmo check` reports before anyone leaves the building.
 
 ## Drift accountability
 

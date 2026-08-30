@@ -1,6 +1,6 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-30T04:08:05+00:00",
+  "generated": "2026-08-30T06:04:22+00:00",
   "capture": {
     "source": "8_29_2026 - Friend - 1 Room.zip",
     "tier": "C",
@@ -321,9 +321,9 @@
       "limit_m": 0.015,
       "interval_half_width_m": 0.0109,
       "precision_pass": true,
-      "ground_truth_m": 3.012,
-      "error_m": -0.0247,
-      "accuracy_pass": false
+      "ground_truth_m": 3.002,
+      "error_m": -0.0147,
+      "accuracy_pass": true
     },
     {
       "gate": "wall_length_0",

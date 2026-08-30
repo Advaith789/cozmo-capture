@@ -55,8 +55,13 @@ brief's gate is on the **clear opening** the gap between the inner faces of the
 frame, which is neither figure above. It lies between them, so this row
 indicates rather than settles.
 
-**We detect no openings at all** so on that gate we score zero regardless of
-what Polycam's error turns out to be.
+**We do detect openings now, and still do not claim the gate.** Ours are found
+by tracing the camera ray to every return, which is what distinguishes a doorway
+from a wardrobe standing against a wall; on synthetic truth that lands 0.8 cm
+mean. On this doorway we read 0.587 m, because what we measure is the clear
+opening the sensor could see through, which equals the frame only with the door
+fully open. Polycam reports a door dimension and we report a gap, and the two
+are not the same quantity.
 
 ## Where Polycam is clearly ahead
 

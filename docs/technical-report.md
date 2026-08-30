@@ -19,49 +19,40 @@ project.
 
 ```mermaid
 flowchart TD
-    A["Polycam raw zip<br/>LiDAR"] --> D["ingest.lidar"]
-    B["photo folder"] --> E["ingest.camera<br/>structure from motion"]
-    C["video .mov"] --> E
-    M["metric depth model<br/>Depth Anything V2"] -.-> E
-    D --> G["PosedFrame<br/>depth + pose + provenance"]
-    E --> G
-    G --> H["drift correction<br/>plane anchored, ablatable"]
-    H --> I["envelope surfaces<br/>floor and ceiling"]
-    H --> J["wall plane detection"]
-    I --> K["room<br/>polygon, area, height"]
-    J --> K
-    K --> N["openings<br/>holes in wall planes"]
-    K --> P["damage<br/>colour anomalies"]
-    K --> O["JSON contract<br/>+ SVG floor plan"]
+    A["LiDAR capture<br/>Polycam raw export"] --> F["PosedFrame<br/>depth, pose, provenance"]
+    B["photos or video<br/>native camera"] --> C["ingest.learned<br/>MASt3R, metric"]
+    C --> F
+    F --> S["floor and ceiling<br/>envelope, drift corrected"]
+    S --> Z["spaces<br/>split at doorways"]
+    Z --> R["walls and room<br/>per room, with intervals"]
+    R --> O["JSON contract<br/>+ SVG plan"]
+    R --> N["openings<br/>ray traced"]
+    R --> D["damage<br/>opt in"]
     N -.-> O
-    P -.-> O
+    D -.-> O
     classDef ok fill:#d7f0e6,stroke:#0e6b60,color:#123
     classDef warn fill:#fdf0d5,stroke:#8a6009,color:#123
     classDef bad fill:#f6dcd4,stroke:#a32222,color:#123
-    class A,D,G,H,I,J,K,O ok
-    class M,N warn
-    class B,C,E,P bad
+    class A,F,S,Z,R,O ok
+    class B,C,N warn
+    class D bad
 ```
 
 **Green** ships and is validated. **Amber** is built and runs, but its output is
 reported as experimental rather than claimed. **Red** is built and runs but does
 not yet produce usable measurements.
 
-| box or arrow | what it does |
+| box | what it does |
 |---|---|
-| **Polycam raw zip** | The LiDAR capture, exported with developer mode on: images, depth, confidence, intrinsics and two sets of poses. |
-| **photo folder / video** | The camera-only tiers, shot on the native Camera app because Polycam exports nothing usable without LiDAR. |
-| **ingest.lidar** | Unpacks the archive and joins `corrected_cameras` for pose with `cameras` for the sensor metadata the corrected files drop. |
-| **ingest.learned** | Reconstructs tiers A and B with MASt3R, a learned multi-view model run locally. Feature matching could not do it: a bedroom wall is flat, blank and dim, and COLMAP registered 4 photographs of 29. Amber because it reconstructs but reads 8 to 15% low and closes no room polygon. |
-| **metric depth model** | Predicts absolute distance in metres from a single image, which is what supplies scale to a reconstruction that otherwise has none. Dotted because it informs the camera tiers rather than sitting in the data path. |
-| **PosedFrame** | The one representation all three tiers converge on, so the geometry below it is written once instead of three times. |
-| **drift correction** | Solves per-frame corrections against the floor and ceiling planes, tied through time; the correction strength sweeps to zero for the required ablation. |
-| **envelope surfaces** | Locates floor and ceiling at a tail quantile of the point cloud rather than its densest band, because clutter sits on floors and fittings hang below ceilings. |
-| **wall plane detection** | Recovers the room's own axes, then fits each wall as a plane to hundreds of thousands of points rather than measuring the spread of the cloud. |
-| **room** | Intersects the fitted walls into a polygon and derives area, perimeter and wall lengths, each with a bootstrapped interval. |
-| **space segmentation** | Splits a capture covering more than one room before anything is measured, by eroding the floor occupancy until doorways sever and flooding the room cores back out. Doorway width falls out of the distance transform at the seam. |
-| **openings** | Classifies each cell of a wall as seen-through, wall, or occluded, using the ray from the camera to each return. That is what separates a doorway from a wardrobe standing in front of one, which absence-of-returns cannot. 0.8 cm mean width error on synthetic truth; amber because on a real capture it measures the clear opening at capture time rather than the frame. |
-| **damage** | Flags colour anomalies against each surface's local appearance. Opt-in via `--damage` and red because it reported 79 regions on a clean control room, so it cannot separate a real gouge from wood grain. |
+| **LiDAR capture** | Polycam raw export with developer mode on: images, depth, confidence, intrinsics and two sets of poses. |
+| **photos or video** | The camera-only tiers, shot on the native Camera app because Polycam exports nothing usable without LiDAR. |
+| **ingest.learned** | Reconstructs tiers A and B with MASt3R, a learned multi-view model run locally. Feature matching could not: a bedroom wall is flat, blank and dim, and COLMAP registered 4 photographs of 29. Amber because it reconstructs but reads 8 to 24% low. |
+| **PosedFrame** | The one representation all three tiers converge on, so the geometry below is written once instead of three times. |
+| **floor and ceiling** | Locates both surfaces at a tail quantile rather than the densest band, because clutter sits on floors and fittings hang below ceilings. Drift is solved against these planes and the correction sweeps to zero for the ablation. |
+| **spaces** | Splits a capture covering more than one room, by eroding the floor until doorways sever and flooding the room cores back out. A split survives only where a wall stands between the two halves. Doorway width falls out of the same distance transform. |
+| **walls and room** | Fits each wall as a plane to hundreds of thousands of points, intersects them into a polygon, and derives area, perimeter and wall lengths, each with a bootstrapped interval recentred on the value it belongs to. |
+| **openings** | Classifies each wall cell as seen-through, wall, or occluded using the camera ray. That is what separates a doorway from a wardrobe, which absence of returns cannot. Amber because on a real capture it measures the clear opening rather than the frame. |
+| **damage** | Two colour rules with metric extent from depth. Red and opt-in: it reported 79 regions on a clean control room. |
 | **JSON + SVG** | The output contract: every number with its interval and the provenance chain that produced it, plus a dimensioned plan. |
 | **solid arrow** | Data flows and the result is claimed. |
 | **dotted arrow** | Contributes, but its output is labelled experimental and excluded from the gates. |
@@ -115,17 +106,23 @@ hold the two to identical output.
 
 ## 2. All the numbers in one place
 
-Five captures, 160 frames each, bootstrap 40, wall draws 50. Tape ground truth
-on my room only: door wall 3.0344 m (mean of five readings), other wall
-3.0411 m, ceiling 2.9705 m.
+Five LiDAR captures, 160 frames each, bootstrap 40, wall draws 50. Tape ground
+truth in two rooms. My room: door wall 3.0344 m (mean of five readings), other
+wall 3.0411 m, ceiling 2.9705 m. Friend 1, measured after the pipeline was
+frozen: long wall 3.7636 m, short wall 3.3620 m, ceiling 3.0020 m (ten readings
+across two sessions, because five could not settle it).
 
 | capture | ceiling | ± | wall A | ± | wall B | ± | area |
 |---|---|---|---|---|---|---|---|
 | my room 2 | 2.9680 | 0.76 | 3.0372 | 0.82 | 3.0524 | 1.22 | 9.271 m² |
 | my room 1 | 3.0271 | 0.70 | 3.0256 | 1.76 | 3.0028 | 1.66 | 9.085 m² |
-| friend 2 | 2.9631 | 0.50 | 3.0434 | 0.77 | 3.0345 | 3.11 | 9.235 m² |
 | friend 1 | 2.9873 | 1.09 | 3.7654 | 0.68 | 3.3603 | 0.77 | 12.653 m² |
-| hallway | 2.9969 | 0.76 | 3.7578 | 2.17 | 7.5027 | 4.02 | 28.193 m² |
+| friend 2 * | 2.9631 | 0.50 | 3.0607 | 2.09 | 3.0228 | 3.11 | 9.252 m² |
+| hallway * | 2.9969 | 0.76 | 3.7677 | 1.74 | 1.2350 | 1.12 | 4.653 m² |
+
+\* Segmented: the row is the largest room in the capture, not the whole
+envelope. The hallway previously reported one room of 28.19 m² spanning several
+spaces, which is a well formed rectangle describing nothing.
 
 Gates, on the three captures where we hold tape:
 
@@ -313,9 +310,12 @@ on a correct number beats no number.
 
 Ordered by how much they cost.
 
-**Tiers A and B reconstruct but do not measure, and the blocker is the capture,
-not the code.** We tested this properly rather than assuming. COLMAP, the
-standard incremental structure-from-motion tool, was run on both:
+**Tiers A and B measure now, and still miss their gate.** They used to do
+neither, and the route between those two states is the most useful thing in this
+section.
+
+Classical reconstruction was tested rather than assumed. COLMAP, the standard
+incremental structure-from-motion tool, was run on both:
 
 | tier | input | COLMAP result |
 |---|---|---|
@@ -323,56 +323,50 @@ standard incremental structure-from-motion tool, was run on both:
 | B, video | 70 frames, every 12th | 27 of 70 registered, reconstruction fragmented; extents in the ratio 1 : 0.53 : 0.21 for a room that is 1 : 0.89 : 0.79 |
 
 The gold-standard tool fails on this footage, which moves the diagnosis from
-"our SfM is weak" to "these captures do not support reconstruction". Sampling
-video more densely to fix it pushed COLMAP past two minutes per room, which is
-too slow for a timed walk-in test regardless.
+"our matching is weak" to "these captures do not support feature matching". The
+reason is visible in the photographs themselves: a bedroom wall is large, flat,
+blank and dimly lit, and matching needs texture. Sampling the video more densely
+pushed COLMAP past two minutes per room, which is too slow for a timed walk-in
+test regardless.
 
-**The deeper point is that classical reconstruction is the wrong tool for the
-tier as specified.** The brief allows two to eight stills per room. Joining
-photographs needs twenty or thirty with heavy overlap; with eight there is
-simply not enough shared information, and no implementation recovers it. That is
-almost certainly why the brief sets the photo gate at ±8% while the LiDAR gate
-is ±1.5 cm: it does not expect reconstruction, it expects a rougher method that
-works from very few views.
+So both tiers now use MASt3R, a learned multi-view model that regresses geometry
+directly instead of matching features, run locally and disclosed. It reconstructs
+where COLMAP could not. Three things had to be fixed, and the first was most of
+the problem:
 
-Published figures for the field agree with where our attempts landed, and point
-at the missing piece: a single photo with a known-size reference object measures
-to 5 to 10%, without one to 15 to 25%. Our photo tier, with no reference in
-frame, measured 15 to 30% out. The brief's gate for the tier is 8%. **The
-difference between failing and passing that gate is an object of known size in
-the shot**, which costs nothing and is now a required step of the protocol
-rather than a suggestion. We could not test it: our captures were already taken.
+- **The aligner was throwing the scale away.** The checkpoint is the metric one
+  and still read 51% low. dust3r's global aligner normalises the pairwise scales
+  so their product is one, which is correct for a scale-free reconstruction and
+  discards exactly the property the metric checkpoint provides. Turning it off
+  moved my room from -50.7% to -8.1% on identical images.
+- **Even sampling across a folder is worse than dense sampling across part of
+  it.** Our folder held two capture sessions an hour apart, so an even spread
+  paired images sharing no scene. Frames now come from a single burst, found by
+  timestamp, never more than one photo apart.
+- **The estimator did not match the data.** Both tiers were hard-coded to the
+  sparse ceiling estimator, which reads a tail quantile because a feature cloud
+  has no dense surface band. A learned pointmap has one, and the tail quantile
+  cut the ceiling off: 17.7% low against 9.6% for the dense estimator on the
+  same cloud.
 
-The right approach for two to eight photos is therefore per-image metric depth,
-predicting absolute distance for each photograph and assembling those, rather
-than triangulating between them. The depth model for it is already built and
-working; the assembly is what we ran out of time for. Section 3 of the capture
-protocol has been rewritten around that method: it now asks for corner shots
-with both junction lines in frame and the phone held level, because with a
-per-image method coverage within each frame matters and overlap between frames
-does not.
+What that buys is honest but weak. Ceiling height lands between 8% and 24% low
+across three rooms, one capture of five recovers two opposing wall pairs and
+closes a polygon with a wall at -0.1% against the LiDAR tier, and video is much
+worse than photographs. The gate is ±8%; two of seven scored figures clear it.
+**Nothing here is claimed.** Two sanity checks do pass independently: camera
+height comes out at 1.54 m, where a phone is held, and the top 1% of points span
+4.6 cm, which is a ceiling plane rather than noise.
 
-The original description follows.
-
-**Tiers A and B reconstruct but do not measure.** Both are built and both run.
-`ingest/camera.py` does incremental structure from motion over the photos or
-sampled video frames, and `ingest/depth.py` scales the result with a metric
-monocular depth model (Depth Anything V2, indoor metric variant, run locally,
-disclosed as the brief requires). Feature matching is not the problem: adjacent
-video frames give 559 to 934 RANSAC inliers, well past what a stable pose needs.
-
-The problem is drift. Chaining two view poses across 110 frames without bundle
-adjustment stretches the reconstruction, and per view scale estimates then
-disagree by more than 50%, so no single factor fixes it. Measured against the
-LiDAR tier on the same room, Tier B came out 3 to 4 times too large. Three
-approaches were tried and none reached usable geometry: a camera height prior,
-metric depth scaling, and single image reconstruction with no poses at all.
-
-What is missing is bundle adjustment and loop closure over the whole sequence,
-which is the same work the capture app does on device. `pycolmap` is the right
-tool and was not integrated in time. **Both tiers are therefore reported as
-reconstructing but not measuring, and the walk-in test can only be served at
-the LiDAR tier.** That is the largest gap in the submission.
+**The deeper point stands.** The brief allows two to eight stills per room, and
+joining photographs needs twenty or thirty with heavy overlap. That is almost
+certainly why the photo gate is ±8% while the LiDAR gate is ±1.5 cm: it does not
+expect reconstruction, it expects a rougher method that works from very few
+views. Published figures agree with where we landed. A single photo with a
+known-size reference object measures to 5 to 10%; without one, 15 to 25%.
+**The difference between failing and passing that gate is an object of known
+size in the shot**, which costs nothing and is now a required step of the
+capture protocol rather than a suggestion. Our captures were already taken, so
+we could not test it.
 
 **Opening detection was rebuilt, and we still do not claim the gate.** The
 first detector looked for holes in a fitted wall: absence of returns bounded by
@@ -491,33 +485,42 @@ only.
 
 ## 7. Another eight hours?
 
-In rough order of value per hour.
+The previous version of this list had five items. Four of them are now built:
+room segmentation, opening detection, a working route for tiers A and B, and the
+speed work, which took one capture from 259 s to 25 s with every measurement
+unchanged. What follows is what is actually next, in order of value per hour.
 
-**1. Room segmentation.** Everything downstream is waiting on it: the doorway
-error, the repeatability failure, the multi room stitch, and the head to head row
-we lose. Cluster wall planes into rooms by which side of a doorway they sit on.
-This is the one that unlocks the others.
+**1. Buy a laser measure.** Twenty five dollars, and still the single best
+return available. It is not a code change. Two sessions of five tape readings of
+the same ceiling disagree by 2.0 cm with a full range of 6.9 cm, against a gate
+of 1.5 cm. Our own two captures of identical rooms agree to 0.5 cm. **We cannot
+currently certify our own gate, and no amount of engineering fixes that.**
 
-**2. Opening detection.** We already have wall planes fitted to half a million
-points each. An opening is a hole in one: project the wall's points onto its own
-plane and look for a region with no returns bounded by returns. A door reaches
-the floor line, a window has wall below it. That distinction is geometric, not
-learned, and it turns a zero into a scored gate.
+**2. Re-shoot the photo tier with a scale reference in frame.** The protocol now
+requires an object of known size in every photograph, and every capture we hold
+predates that rule, so the one change most likely to move tiers A and B from 8
+to 24% low into the ±8% gate is completely untested. Published figures put a
+referenced single photo at 5 to 10% and an unreferenced one at 15 to 25%, which
+brackets exactly where we landed.
 
-**3. Bundle adjustment for tiers A and B.** Everything else is built: features,
-matching, pose chaining, relative scale, metric depth, dense back projection.
-The reconstruction drifts because the poses are never globally optimised.
-Driving `pycolmap`'s incremental mapper instead of the hand rolled chain is the
-single change most likely to make both camera tiers work.
+**3. Ground truth for a doorway and a room boundary.** The stitch works and is
+scored only against synthetic truth. A tape across one real doorway and one real
+room boundary would turn the whole multi-room claim from demonstrated into
+measured, and it is ten minutes of work.
 
-**4. Buy a laser measure.** Twenty five dollars. It is the cheapest accuracy
-improvement available to this project and it is not a code change. Right now we
-cannot certify our own gate.
+**4. Openings: measure the frame, not the gap.** The detector reports the clear
+opening the sensor saw through, which is the frame width only when the door
+stands fully open. Detecting the jambs directly, as a pair of vertical
+discontinuities in the wall plane, would measure the thing the gate actually
+asks for. A controlled re-capture with every door held open would separate the
+two error sources that are currently tangled.
 
-**5. Speed.** 45 seconds per capture is fine, but most of it is the sequential
-part of PNG unfiltering. An hour with that loop would pay off on the day.
+**5. More views for the learned tier.** Reconstruction quality is limited by how
+many views fit in 8 GB of unified memory, which caps us at twelve. The pair
+graph is a sliding window; a smarter one, or simply a machine with more memory,
+is the obvious next lever and the one we could not pull here.
 
-What we would **not** do: chase the remaining +5 cm on the door wall. Two rooms
-agree with each other to within 2 cm and disagree with one tape reading by 5 cm.
-Until the ground truth is better than the thing being measured, tuning against
-it is guessing with extra steps.
+What we would **not** do: tune anything against the current ground truth. Two
+rooms agree with each other to within 3 cm and disagree with the tape by more
+than the tape disagrees with itself. Until the ruler is better than the thing
+being measured, tuning against it is guessing with extra steps.
