@@ -134,23 +134,54 @@ def _photo_height_only(path: Path, args: argparse.Namespace) -> int:
     print("joined into one reconstruction, which eight wide-baseline stills")
     print("cannot support: COLMAP registered 4 of our 29.")
 
+    # Rung one: metric depth per photo. Best when it works, and it needs a
+    # floor it can find.
     heights = camera.photo_ceiling_heights(path)
-    if len(heights) < 3:
-        print(f"\nerror: only {len(heights)} photo(s) yielded a usable floor and "
-              f"ceiling. Shoot corner to corner with both junction lines in "
-              f"frame.", file=sys.stderr)
-        return 3
+    if len(heights) >= 3:
+        import statistics
+        med = statistics.median(heights)
+        rel = camera.PHOTO_HEIGHT_REL
+        source = "metric depth model, per photo median"
+        prov = ("depth:inferred | pose:none | scale:metric_depth_model | "
+                "method:per_photo_median | interval:cross_room_spread_±30pct")
+        extra = f"photo spread     {max(heights) - min(heights):.2f} m"
+        used = len(heights)
+    else:
+        # Rung two: ask a vision model. Weaker, and labelled as such.
+        from cozmo.ingest import llm
+        print(f"\nmetric depth found a floor in only {len(heights)} photo(s); "
+              f"falling back to a vision model estimate.")
+        if not llm.available():
+            print("\nerror: no fallback available. Set OPENAI_API_KEY in .env, "
+                  "or re-shoot with the floor visible in each photo.",
+                  file=sys.stderr)
+            return 3
+        photos = sorted(p for p in path.rglob("*")
+                        if p.suffix.lower() in {".heic", ".heif", ".jpg", ".jpeg"})
+        agg, ests = llm.estimate_room(photos)
+        if not agg:
+            print("\nerror: the fallback returned nothing.", file=sys.stderr)
+            return 3
+        med = agg["ceiling_height_m"]
+        rel = agg["interval_rel"]
+        source = f"vision model estimate ({agg['model']})"
+        prov = (f"depth:llm_estimate | pose:none | scale:model_prior | "
+                f"method:{agg['prompt_version']} | "
+                f"cached:{agg['all_cached']} | interval:observed_error_±35pct")
+        extra = (f"also estimated    {agg['width_m']:.2f} x {agg['length_m']:.2f} m "
+                 f"floor, NOT measured")
+        used = agg["photos_used"]
+        print(f"\n[!] This is an estimate from a language model, not a "
+              f"measurement.\n    It reasons from door heights and typical "
+              f"room sizes. On rooms where\n    we hold tape it came out "
+              f"between 34% low and 15% high.")
 
-    import statistics
-    med = statistics.median(heights)
-    rel = camera.PHOTO_HEIGHT_REL
-    spread = max(heights) - min(heights)
-    print(f"\nphotos used      {len(heights)}")
+    print(f"\nphotos used      {used}")
+    print(f"source           {source}")
     print(f"ceiling height   {med:.3f} m  [{med * (1 - rel):.3f}, "
           f"{med * (1 + rel):.3f}]  (±{rel * 100:.0f}%)")
-    print(f"photo spread     {spread:.2f} m across individual photos")
-    print("provenance       depth:inferred | pose:none | scale:metric_depth_model "
-          "| method:per_photo_median | interval:cross_room_spread_±30pct")
+    print(f"{extra}")
+    print(f"provenance       {prov}")
     if args.truth_height:
         err = (med - args.truth_height) * 100
         print(f"\naccuracy         {err:+.1f} cm vs tape "
