@@ -52,7 +52,7 @@ omitted; a matrix that hides them is worth less than one that does not.
 | 2.14 | Multi-room capture, 3+ rooms plus a connector | `myroom/space_capture/` | 4 rooms + hallway, Tier C | **done** |
 | 2.15 | One furnished room with damage in 2 classes | `myroom/error photos/` | hallway 2×3 in ellipse; friend-2 room 3×3 in square | **partial** staged and measured, not detected |
 | 2.16 | Same rooms at all three tiers | `myroom/` | Tier C x5, photos x3 rooms, video x2, all processed and scored | **done** processed; Tier A/B accuracy is poor and reported as such |
-| 2.17 | One room captured twice at the same tier | `8_28 My room 1` + `8_29 My room 2` | repeatability table in benchmark report | **done** |
+| 2.17 | One room captured twice at the same tier | my room, captured **three times**: `8_28` non-compliant, `8_29` and `8_30` compliant | repeatability table in benchmark report, all three pairings | **done** |
 | 2.18 | Tape or laser ground truth, measurements submitted | [docs/benchmark-report.md](benchmark-report.md) | **two rooms**, five readings each. My room: walls 3.0344 / 3.0411 m, ceiling 2.9705 m, door slab 0.8382 m, frame 0.9576 m. Friend 1: walls 3.7636 / 3.3620 m, ceiling 3.0020 m (ten readings, two sessions), measured after the pipeline was frozen | **done** |
 
 ## Part 2, Gates
@@ -61,8 +61,8 @@ omitted; a matrix that hides them is worth less than one that does not.
 |---|---|---|---|
 | 2.19 | Opening widths ≤2 cm on ≥85%, detection scored | [src/cozmo/geometry/openings.py](../src/cozmo/geometry/openings.py), `tests/test_openings_rt.py` | **partial** detection built and scored. Meets the 2 cm gate on synthetic truth (0.8 cm mean, 1.3 cm worst); on the real capture it detects the doorway but measures the clear opening rather than the frame, so the gate is reported and not claimed |
 | 2.20 | Ceiling height ≤1.5 cm per room | `out/*.json` `gates[]` | **done** precision passes on all five captures (0.50 to 1.09 cm). Accuracy passes on two of the three rooms with tape and fails on the deliberately non-compliant scan |
-| 2.21 | Ceiling spread across repeat captures ≤1 cm | benchmark report | **done** reported and **fails** at 5.9 cm. The two captures are the compliant and the deliberately non-compliant scan of the same room |
-| 2.22 | Repeatability, 1 cm or 0.5% per wall | benchmark report | **done** reported. One wall pair passes at 1.2 cm, the other fails at 5.0 cm. Was 16.7 cm before the wall-band fix |
+| 2.21 | Ceiling spread across repeat captures ≤1 cm | benchmark report | **done** reported and **fails** at 1.49 cm between the two compliant captures, missing by 0.49 cm. Was 5.9 cm when the pair included the non-compliant scan |
+| 2.22 | Repeatability, 1 cm or 0.5% per wall | benchmark report | **done** and **PASSES** on the two compliant captures: **0.47 cm and 0.07 cm** per wall pair against a 1.5 cm limit. Was 16.7 cm before the wall-band fix, and 4.96 cm when the pair included the non-compliant scan |
 | 2.23 | Drift accountability + ablation | [src/cozmo/geometry/drift.py](../src/cozmo/geometry/drift.py) | **done** via `--ablate` and a σ_step sweep to zero, which is the uncorrected case |
 | 2.24 | Photo-tier whole-property stitch | n/a | **not done**. The stitch itself is built (2.6) and runs on LiDAR captures, but no photo capture reconstructs a closed room, so there is nothing to stitch at the photo tier |
 

@@ -22,6 +22,7 @@ cozmo run "<capture>.zip" --name <name> \
 |---|---|---|---|---|---|---|
 | My room 1 (28 Aug) | 1 | C | 236 | 2.5 min | 5.3 cm | 3200 |
 | My room 2 (29 Aug) | 1 | C | 335 | 1.7 min | 0.9 cm | 3200 |
+| My room 3 (30 Aug) | 1 | C | 144 | 1.5 min | 1.1 cm | lit |
 | Friend 1 room | 1 | C | 241 | 1.6 min | 0.5 cm | 80 |
 | Friend 2 room | 1 | C | 307 | 1.5 min | 0.5 cm | 160 |
 | Connector hallway | 1 | C | 280 | 1.7 min | 0.7 cm | 400 |
@@ -116,6 +117,7 @@ pipeline.
 |---|---|---|---|---|---|---|---|
 | my room 1 | 3.0271 | 0.70 cm | 3.0256 | 1.76 cm | 3.0028 | 1.66 cm | 9.085 m² |
 | my room 2 | 2.9680 | 0.76 cm | 3.0372 | 0.82 cm | 3.0524 | 1.22 cm | 9.271 m² |
+| my room 3 | 2.9531 | **0.38 cm** | 3.0325 | 0.71 cm | 3.0517 | 0.92 cm | 9.254 m² |
 | friend 1 room | 2.9873 | 1.09 cm | 3.7654 | 0.68 cm | 3.3603 | 0.77 cm | 12.653 m² |
 | friend 2 room * | 2.9631 | 0.50 cm | 3.0607 | 2.09 cm | 3.0228 | 3.11 cm | 9.252 m² |
 | connector hallway * | 2.9969 | 0.76 cm | 3.7677 | 1.74 cm | 1.2350 | 1.12 cm | 4.653 m² |
@@ -153,15 +155,20 @@ that same room.
 | friend 1 | ceiling height | ±1.09 cm | **PASS** | -1.5 cm | **PASS** by 0.03 cm |
 | friend 1 | long wall | ±0.68 cm | **PASS** | **+0.2 cm** | **PASS** |
 | friend 1 | short wall | ±0.77 cm | **PASS** | **-0.2 cm** | **PASS** |
+| my room 3 | ceiling height | **±0.38 cm** | **PASS** | -1.7 cm | fail |
+| my room 3 | door wall | ±0.71 cm | **PASS** | **-0.2 cm** | **PASS** |
+| my room 3 | other wall | ±0.92 cm | **PASS** | **+1.1 cm** | **PASS** |
 | my room 1 | ceiling height | ±0.70 cm | **PASS** | +5.7 cm | fail |
 | my room 1 | door wall | ±1.76 cm | fail | **-0.9 cm** | **PASS** |
 | my room 1 | other wall | ±1.66 cm | fail | -3.8 cm | fail |
 
-**Precision passes 7 of 9, accuracy 7 of 9.** My room 2, the capture that
-followed the protocol, passes every gate on both axes, and so does friend 1,
-though its ceiling clears by 0.3 mm and should be read as a coin toss rather
-than a result. **Every remaining failure belongs to my room 1, the deliberately
-non-compliant capture**, which is the point of including it.
+**Precision passes 10 of 12, accuracy 9 of 12**, across four captures with tape.
+My room 2 and friend 1 pass every gate on both axes, though friend 1's ceiling
+clears by 0.3 mm and should be read as a coin toss. My room 3, the third capture
+of the same room, has the **tightest precision in the whole benchmark at
+±0.38 cm** and misses only on ceiling accuracy. **Every other failure belongs to
+my room 1, the deliberately non-compliant capture**, which is the point of
+including it.
 
 An earlier version of this table scored friend 2 against **my room's** tape, on
 the grounds that they are the same unit type with the same floorplan. That was
@@ -210,31 +217,49 @@ nothing to disagree with.
 Two captures of the same room at the same tier. Limit: 1 cm, or 0.5% per wall,
 whichever is larger; ceiling spread across captures ≤1 cm.
 
-| | scan 1 | scan 2 | spread | limit | |
+My room was captured **three times**: once breaking the protocol deliberately,
+twice following it. The fair repeatability test is between the two compliant
+captures, and all three pairings are reported below so the choice is visible
+rather than convenient.
+
+**Scan 2 against scan 3, both compliant:**
+
+| | scan 2 | scan 3 | spread | limit | |
 |---|---|---|---|---|---|
-| ceiling height | 3.0271 | 2.9680 | 5.9 cm | 1.0 cm | FAIL |
-| wall pair A | 3.0256 | 3.0372 | **1.2 cm** | 1.5 cm | **PASS** |
-| wall pair B | 3.0028 | 3.0524 | 5.0 cm | 1.5 cm | FAIL |
+| wall pair A | 3.0372 | 3.0325 | **0.47 cm** | 1.5 cm | **PASS** |
+| wall pair B | 3.0524 | 3.0517 | **0.07 cm** | 1.5 cm | **PASS** |
+| ceiling height | 2.9680 | 2.9531 | 1.49 cm | 1.0 cm | fail |
 
-One of three passes, where previously none did. The earlier failure on wall
-pair B was 16.7 cm and came from an unstable choice of plane, which is fixed:
-the wall band no longer samples low enough to pick up furniture and the points
-spraying through an open doorway. What remains is a different failure with a
-different cause.
+**The per-wall repeatability gate passes**, at 0.47 cm and 0.07 cm against a
+1.5 cm limit. Same room in, same walls out. The ceiling-spread gate still fails,
+by 0.49 cm.
 
-**These two scans are not equivalent, and that is the point of the pair.** Scan
-1 broke the protocol: it was captured in a single fast sweep and the pose
-optimiser had to move each camera a median of 5.3 cm to reconcile it, against
-0.9 cm for scan 2. Scan 1 is also the capture that fails three of its own
-accuracy gates. So this gate is measuring a compliant capture against a
-non-compliant one, and a 5.9 cm ceiling spread is the honest cost of the
-difference rather than noise in the pipeline.
+**The other two pairings, for completeness:**
+
+| pairing | ceiling | wall A | wall B |
+|---|---|---|---|
+| scan 1 vs scan 2 | 5.91 cm | 1.16 cm | 4.96 cm |
+| scan 1 vs scan 3 | 7.40 cm | 0.69 cm | 4.89 cm |
+
+Scan 1 is the deliberately non-compliant capture: a single fast sweep, 5.3 cm of
+median pose correction against 0.9 and 1.1 cm for the other two. Every pairing
+that includes it fails wall pair B by about 5 cm, and every pairing that
+excludes it passes both walls. **That is the gate doing its job**: it is
+detecting a bad capture, not an unrepeatable pipeline, and `cozmo check` refuses
+scan 1 in under a second before the pipeline runs.
 
 We report which kind of failure this is, as the gate requires: **repeatable but
-capture-dependent, not unrepeatable.** Re-running either scan reproduces its own
-numbers exactly, and the two disagree because the captures genuinely differ. The
-diagnostic that separates them, median pose correction, runs in under a second
-and is what `cozmo check` reports before anyone leaves the building.
+capture-dependent, not unrepeatable.** Re-running any scan reproduces its own
+numbers exactly; two compliant scans agree on walls to 0.07 cm; the disagreement
+appears only when a non-compliant capture is included.
+
+**What still fails is the ceiling.** Two compliant captures differ by 1.49 cm
+against a 1 cm limit, and their accuracies are -0.2 cm and -1.7 cm against the
+same tape. The envelope estimator locates the ceiling at a tail quantile, and
+how much ceiling a scan actually saw varies with how the operator tilted. Scan 3
+used 144 keyframes against scan 2's 160. This is the one gate where more
+captures have made the picture worse rather than better, and it is reported that
+way.
 
 ## Drift accountability
 

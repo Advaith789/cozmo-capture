@@ -43,8 +43,9 @@ other wall       3.0524 m   precision ±1.22 cm PASS   accuracy +1.1 cm PASS
 ```
 
 The capture that followed the protocol passes every gate on both axes. Across
-nine gates scored against tape in three rooms, **precision passes 7 and accuracy
-7**. A second room was tape-measured after the pipeline was frozen, and both its
+twelve gates scored against tape in four captures, **precision passes 10 and
+accuracy 9**, and the **per-wall repeatability gate passes at 0.47 cm and
+0.07 cm** between two compliant captures of the same room. A second room was tape-measured after the pipeline was frozen, and both its
 walls came in inside 2 mm: **+0.2 cm and -0.2 cm** against a 1.5 cm gate. The
 benchmark's ground truth turned out to be less precise than the gate it was
 meant to certify, which is written up as a result rather than buried: see
@@ -262,6 +263,50 @@ scripts/
 ```
 
 ---
+
+## Deliverable 8: the raw benchmark data
+
+**1.4 GB, not in this repo.** It is raw sensor data, and the brief allows large
+binaries by script or volume, so it is delivered as a download:
+
+> **[Raw benchmark data (Google Drive, 1.4 GB)](https://drive.google.com/drive/folders/1fLeg9nfBbvPmaraEbVhx7JT-J1ZxJqIO?usp=share_link)**
+
+Place the `myroom` folder at the repository root, which is where
+`scripts/benchmark.sh` looks for it. Nothing else needs configuring. If the
+whole-folder download stalls, the subfolders below can be taken one at a time;
+`space_capture/` alone is enough to reproduce every Tier C number in the
+benchmark report.
+
+```
+cozmo-capture/
+  myroom/          <- unpack here
+  src/  docs/  scripts/  out/
+```
+
+| folder | files | size | what it is |
+|---|---|---|---|
+| `space_capture/` | 5 | 458M | Tier C raw exports: 3 rooms, a hallway, and my room twice |
+| `my room pics/` | 113 | 267M | Tier A photos, my room |
+| `my room video/` | 2 | 183M | Tier B video, my room |
+| `last_test_my_room/` | 23 | 120M | the protocol-compliant re-shoot: 22 photos and the third LiDAR scan |
+| `friend 2 room vid/` | 1 | 96M | Tier B video |
+| `friend 1 room vid/` | 1 | 87M | Tier B video |
+| `friend 1 room pics/` | 29 | 73M | Tier A photos |
+| `friend 2 room pics/` | 67 | 68M | Tier A photos |
+| `floorplan/` | 2 | 50M | Polycam RoomPlan exports for the head-to-head, both rooms |
+| `error photos/` | 2 | 4.4M | staged damage, photographed and tape-measured |
+
+Ground truth is not a separate file: every tape reading is in
+[benchmark-report.md](docs/benchmark-report.md), individual readings and all,
+and the same figures are passed to the pipeline as `--truth-height` and
+`--truth-walls` in `scripts/benchmark.sh`, so the numbers scoring the gates and
+the numbers in the report cannot drift apart.
+
+With the data in place, one command regenerates every figure in the benchmark:
+
+```sh
+bash scripts/benchmark.sh
+```
 
 ## Setup
 

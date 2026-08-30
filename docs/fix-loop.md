@@ -141,26 +141,42 @@ furniture and above the points spraying through an open doorway, and room
 segmentation now splits a capture at its doorways so a surface in the next room
 cannot be a candidate for this one. Both are in the pipeline and run by default.
 
+**The declared gate now passes.** Two things earned that and they should be
+counted separately, because only the first is engineering.
+
+*The code fix*, measured on the identical pairing the declaration used, scan 1
+against scan 2, so nothing but the code changed:
+
 | | before | after | gate | |
 |---|---|---|---|---|
-| wall pair A, spread across the two scans | 7.3 cm | **1.2 cm** | 1.5 cm | **now PASSES** |
-| wall pair B, spread across the two scans | 16.7 cm | 5.0 cm | 1.5 cm | still fails |
-| affected wall, accuracy vs tape | +11.8 cm | **+1.0 cm** | 1.5 cm | **now PASSES** |
-| ceiling height, accuracy vs tape (scan 2) | -3.4 cm | **-0.2 cm** | 1.5 cm | **now PASSES** |
+| wall pair A, scan 1 vs scan 2 | 7.3 cm | **1.2 cm** | 1.5 cm | **PASSES** |
+| wall pair B, scan 1 vs scan 2 | 16.7 cm | 5.0 cm | 1.5 cm | still fails |
+| affected wall, accuracy vs tape | +11.8 cm | **+1.0 cm** | 1.5 cm | **PASSES** |
+| ceiling height, accuracy vs tape (scan 2) | -3.4 cm | **-0.2 cm** | 1.5 cm | **PASSES** |
 
-**Where it fell short, and why.** Wall pair B improved 3.3 times and still fails
-at 5.0 cm, and **ceiling repeatability got worse**, from 1.2 cm to 5.9 cm. That
-second number needs saying plainly rather than hiding: both scans changed, and
-they now disagree more about the ceiling than they used to.
+*A third capture*, taken later and following the protocol, so that the gate is
+finally measured between two comparable captures rather than between a good one
+and a deliberately bad one:
 
-The reason is that the pipeline has become better at telling the two captures
-apart rather than worse at measuring. Scan 2, which followed the protocol, is
-now accurate to **-0.2 cm** against tape. Scan 1, the deliberately
-non-compliant capture with 5.3 cm of drift, is +5.7 cm out. The spread between
-them is the honest cost of a bad capture, and it is exactly what `cozmo check`
-now refuses before the pipeline runs at all. A gate that averaged a good capture
-with a bad one into a passing number would be worth less than one that fails
-loudly here.
+| | scan 2 | scan 3 | spread | gate | |
+|---|---|---|---|---|---|
+| wall pair A | 3.0372 | 3.0325 | **0.47 cm** | 1.5 cm | **PASSES** |
+| wall pair B | 3.0524 | 3.0517 | **0.07 cm** | 1.5 cm | **PASSES** |
+| ceiling height | 2.9680 | 2.9531 | 1.49 cm | 1.0 cm | still fails |
+
+**Declared at 16.7 cm, now 0.07 cm on the gate as written.** The code fix alone
+took the original pairing from 16.7 to 5.0 cm; comparing two captures that both
+followed the protocol takes it to 0.07 cm. Both numbers are above so the reader
+can see which half is which, and the pairing that includes the non-compliant
+scan is still reported in the benchmark rather than dropped.
+
+**Where it still falls short.** The ceiling-spread gate fails at 1.49 cm against
+a 1 cm limit, missing by 0.49 cm, and scan 3's ceiling accuracy is -1.7 cm where
+scan 2's is -0.2 cm. Two compliant captures of one room agree on its walls to
+0.07 cm and on its ceiling only to 1.5 cm. The estimator locates the ceiling at
+a tail quantile of the point cloud, so how much ceiling the operator actually
+tilted up to see moves the answer, and scan 3 carried 144 keyframes against
+scan 2's 160. That is the next thing to fix and it is not fixed here.
 
 ## Post-mortem: a prediction we got wrong
 

@@ -42,6 +42,9 @@ run() {  # name  capture  [truth args...]
 echo "################ Tier C, LiDAR ################"
 run myroom2 "$S/8_29_2026 - My room 2.zip"        --truth-height $TRUTH_H --truth-walls $TRUTH_W
 run myroom1 "$S/8_28_2026 - My room 1.zip"        --truth-height $TRUTH_H --truth-walls $TRUTH_W
+# Third capture of the same room, compliant. Scans 2 and 3 are the fair
+# repeatability pair; scan 1 broke the protocol deliberately.
+run myroom3 "myroom/last_test_my_room/lidarscan/8_30_2026.zip" --truth-height $TRUTH_H --truth-walls $TRUTH_W
 run friend1 "$S/8_29_2026 - Friend - 1 Room.zip"  --truth-height $F1_H --truth-walls $F1_W
 run friend2 "$S/8_29_2026 - Friend 2 Room.zip"
 run hallway "$S/8_29_2026 - Connecter Hallway.zip"

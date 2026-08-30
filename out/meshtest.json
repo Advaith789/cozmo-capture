@@ -1,6 +1,6 @@
 {
   "schema": "cozmo-plan/0.2",
-  "generated": "2026-08-30T16:54:46+00:00",
+  "generated": "2026-08-30T18:01:57+00:00",
   "capture": {
     "source": "myroom2_export.ply",
     "tier": "M",
